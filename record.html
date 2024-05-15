@@ -1,0 +1,70 @@
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html" charset="utf-8">
+	<title>Blog of W_liitlewhite</title>
+  <link rel="shortcut icon" href="image/favicon.ico"/>
+  <link rel="stylesheet" href="css/Blog.css" type="text/css">
+	<link rel="stylesheet" href="css/bootstrap.min.css" type="text/css">
+	<script type="text/javascript" src="js/Blog.js"></script>
+  <script type="text/javascript">
+  window.onload=function(){
+    var main=document.getElementById("blogs");
+    var div=document.createElement("div");
+    var figure=document.createElement("figure");
+    var img=document.createElement("img");
+    var ul=document.createElement("ul");
+    var h3=document.createElement("h3");
+    var a=document.createElement("a");
+    var p1=document.createElement("p");
+    var p2=document.createElement("p");
+    var span1=document.createElement("span");
+    var span2=document.createElement("span");
+    var span3=document.createElement("span");
+    var span4=document.createElement("span");
+    var a1=document.createElement("a");
+    var a2=document.createElement("a");
+    var a3=document.createElement("a");
+    a1.innerHTML="个人博客";
+    span1.className="lm f_l";
+    span2.className="dtime f_l";
+    span2.innerHTML="2014-02-19";
+    span3.className="viewnum f_r";
+    // span3.innerHTML="浏览（<a href="/">459</a>）";
+    span4.className="pingl f_r";
+    span4.innerHTML="评论（<a href="/">30</a>）";
+    a.href="/";
+    a.innerHTML="住在手机里的朋友";
+    p1.innerHTML="通信时代，无论是初次相见还是老友重逢，交换联系方式，常常是彼此交换名片，然后郑重或是出于礼貌用手机记下对方的电话号码。在快节奏的生活里，我们不知不觉中就成为住在别人手机里的朋友。又因某些意外，变成了别人手机里匆忙的过客，这种快餐式的友谊 ...";
+    p2.className="autor";
+    img.src="image/01.jpg";
+    div.className="blogs";
+    main.appendChild(div); 
+    div.appendChild(figure);
+    div.appendChild(ul);
+    figure.appendChild(img);
+    ul.appendChild(h3);
+    ul.appendChild(p1);
+    ul.appendChild(p2);
+    h3.appendChild(a);
+    p2.appendChild(span1);
+    p2.appendChild(span2);
+    p2.appendChild(span3);
+    p2.appendChild(span4);
+    span1.appendChild(a1);
+    document.getElementsByClassName("viewnum f_r").innerHTML="浏览（<a href="/">459</a>）";  
+      }
+  </script>
+</head>
+<body style="background-color:#f0f0f0">
+
+  <div class="about_me" id="mydiv">
+    <div class="about_title">
+      <span class="glyphicon glyphicon-console" aria-hidden="true"> 您现在的位置：<a href="blog.html">首页</a><strong>></strong><a href="record.html">心情</a></span>
+    </div>
+    <div class="record_blogs" id="blogs">
+    </div>
+</body>
+
+<script src="http://cdn.bootcss.com/jquery/1.11.2/jquery.min.js"></script>
+<script type="text/javascript" src="js/bootstrap.min.js"></script>
+</html>
