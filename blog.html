@@ -24,7 +24,7 @@
     </div>
     <img class="logo" src="image/logo.png">
     <!-- Collect the nav links, forms, and other content for toggling -->
-    <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1" >
+    <!-- <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1" >
       <form class="navbar-form navbar-left" role="search">
         <div class="form-group">
           <input type="text" class="form-control" placeholder="Search">
@@ -47,12 +47,12 @@
         <p>欢迎登录：<span id="loginspan"></span></p>
         <div id="logout"><a href="<%=path%>/users/Users_Logout.action">安全退出</a></div>
       </div>
-    </div><!-- /.navbar-collapse -->
-  </div><!-- /.container-fluid -->
-</nav>
+    </div>
+  </div>
+</nav> -->
 
 <!-- 登录和注册 -->
-<div id="loginbg"></div>
+<!-- <div id="loginbg"></div>
 <div id="lgmain">
   <div class="lghead" id="login_id">
     <ul>
@@ -62,9 +62,7 @@
      <a class="exit" href="javascript:noshow()">X</a>
    </div>
    <div class="login" id="showlg_2">
-    <!--表单验证===================================================-->
      <form name="loginForm" action="<%=path%>/users/Users_Login.action" method="post">
-          <!-- start of login form -->
           <div id="user-name">
             <input type="text" name="username" placeholder="请输入用户名">
           </div>
@@ -78,14 +76,12 @@
           </div>
           <a href="javascript:void(0)">忘记密码？</a>
           <div id="errorinfo">
-            <p>用户名或密码错误！</p> <!-- 显示表单验证的出错信息 -->
+            <p>用户名或密码错误！</p> 
           </div>
     </form>
-     <!-- end of form=========================================- -->
-  </div>
-  <div class="signup" id="showlg_1">
+  </div> -->
+  <!-- <div class="signup" id="showlg_1">
      <form name="loginForm" action="<%=path%>/users/Users_Login.action" method="post">
-          <!-- start of login form -->
           <div id="user-name">
             <input type="text" name="username" placeholder="请输入用户名">
           </div>
@@ -100,11 +96,11 @@
             <input type="submit" class="btn" value="注册"/>
           </div>
           <div>
-            <p>用户名或密码错误！</p> <!-- 显示表单验证的出错信息 -->
+            <p>用户名或密码错误！</p> 
           </div>
     </form>
   </div>
-</div>
+</div> -->
 <!-- 轮播图片 -->
 <div id="carousel-example-generic" class="carousel slide" data-ride="carousel">
   <!-- Indicators -->
