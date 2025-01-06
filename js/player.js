@@ -137,6 +137,8 @@ document.addEventListener('DOMContentLoaded', function() {
             this.pitch = 0;
             this.yaw = 0;
             this.showFlash = false;
+            this.audioPool = [];
+            this.audioLoaded = false;
         }
 
         init() {
@@ -159,6 +161,31 @@ document.addEventListener('DOMContentLoaded', function() {
                 sparkPic.src = this.s + "images/spark" + i + ".png";
                 this.sparkPics.push(sparkPic);
             }
+
+            this.preloadAudio();
+        }
+
+        preloadAudio() {
+            const audioFiles = ['pow1.mp3', 'pow2.mp3', 'pow3.mp3', 'pow4.mp3'];
+            let loadedCount = 0;
+
+            audioFiles.forEach((file, index) => {
+                const audio = new Audio(this.s + "audio/" + file);
+                audio.preload = 'auto';
+                
+                audio.addEventListener('canplaythrough', () => {
+                    loadedCount++;
+                    if (loadedCount === audioFiles.length) {
+                        this.audioLoaded = true;
+                    }
+                });
+
+                // 创建多个副本以支持同时播放
+                for (let i = 0; i < 3; i++) {
+                    const audioClone = audio.cloneNode();
+                    this.audioPool.push(audioClone);
+                }
+            });
         }
 
         rasterizePoint(x, y, z) {
@@ -276,32 +303,24 @@ document.addEventListener('DOMContentLoaded', function() {
                 spark.trail = new Array()
                 this.sparks.push(spark)
             }
-            var pow
-            switch (parseInt(Math.random() * 4)) {
-                case 0:
-                    pow = new Audio(this.s + "audio/pow1.mp3")
-                    break
-                case 1:
-                    pow = new Audio(this.s + "audio/pow2.mp3")
-                    break
-                case 2:
-                    pow = new Audio(this.s + "audio/pow3.mp3")
-                    break
-                case 3:
-                    pow = new Audio(this.s + "audio/pow4.mp3")
-                    break
+            if (this.audioLoaded) {
+                // 从音频池中获取一个可用的音频实例
+                const pow = this.audioPool.find(audio => audio.paused);
+                if (pow) {
+                    var d = Math.sqrt(
+                        (x - this.playerX) * (x - this.playerX) +
+                        (y - this.playerY) * (y - this.playerY) +
+                        (z - this.playerZ) * (z - this.playerZ)
+                    );
+                    var yDistance = Math.abs(y - this.playerY) / 100;
+                    var zDistance = Math.abs(z) / 200;
+                    var volume = 1.5 / (1 + d/11 + yDistance + zDistance);
+                    volume = Math.max(0.1, Math.min(1.0, volume));
+                    pow.volume = volume;
+                    pow.currentTime = 0;
+                    pow.play().catch(e => console.log('播放失败:', e));
+                }
             }
-            var d = Math.sqrt(
-                (x - this.playerX) * (x - this.playerX) +
-                (y - this.playerY) * (y - this.playerY) +
-                (z - this.playerZ) * (z - this.playerZ)
-            )
-            var yDistance = Math.abs(y - this.playerY) / 100;
-            var zDistance = Math.abs(z) / 200;
-            var volume = 1.5 / (1 + d/11 + yDistance + zDistance);
-            volume = Math.max(0.1, Math.min(1.0, volume));
-            pow.volume = volume;
-            pow.play()
         }
 
         doLogic() {
