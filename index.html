@@ -33,21 +33,33 @@
     content: '';
     position: absolute;
     inset: 0;
-    /* width: 100%;
-    height: 100%; */
+    /* 背景图片一直存在，但初始透明 */
     background-image: url("./image/bg.jpg");
     background-size: cover;
     background-position: center;
+    opacity: 0;
+    transition: opacity 1s ease;
     z-index: -1;
 
-    -webkit-mask-image: url("https://blog.nicecmx.top/image/ezgif.gif");
+    /* 初始状态不显示GIF */
+    -webkit-mask-image: none;
     -webkit-mask-size: cover;
-    /* -webkit-mask-repeat: no-repeat; */
     -webkit-mask-position: center;
-    mask-image: url("https://blog.nicecmx.top/image/ezgif.gif");
+    mask-image: none;
     mask-size: cover;
-    /* mask-repeat: no-repeat; */
     mask-position: center;
+}
+
+/* 显示GIF时同时显示背景 */
+.banner.show-mask::before {
+    opacity: 1;
+    -webkit-mask-image: url("https://blog.nicecmx.top/image/ezgif.gif");
+    mask-image: url("https://blog.nicecmx.top/image/ezgif.gif");
+}
+
+/* 修改动画类，只在显示GIF时生效 */
+.banner.show-mask.animate::before {
+    animation: maskAnimation 3s forwards;
 }
 
 /* 添加播放按钮样式 */
@@ -66,11 +78,6 @@
 .play-button:hover {
     transform: scale(1.1);
     opacity: 1;
-}
-
-/* 添加动画类 */
-.banner.animate::before {
-    animation: maskAnimation 3s forwards;
 }
 
 @keyframes maskAnimation {
@@ -110,7 +117,7 @@
         const banner = document.querySelector('.banner');
         let isPlaying = false;
 
-        // 添加新的播放按钮点击事件
+        // 修改播放按钮点击事件
         playButton.addEventListener('click', function() {
             if (!isPlaying) {
                 // 播放音乐
@@ -120,8 +127,11 @@
                 // 更改播放按钮状态
                 playButton.style.display = 'none';
                 
-                // 触发水墨动画
-                banner.classList.add('animate');
+                // 显示GIF和背景，并开始动画
+                banner.classList.add('show-mask');
+                setTimeout(() => {
+                    banner.classList.add('animate');
+                }, 100);
             }
         });
 
