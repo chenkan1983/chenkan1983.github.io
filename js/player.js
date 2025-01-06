@@ -16,13 +16,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const preloadState = {
         audioLoaded: false,
         imageLoaded: false,
+        bgmLoaded: false,
+        videoLoaded: false,
         allLoaded: false,
         audioFiles: ['pow1.mp3', 'pow2.mp3', 'pow3.mp3', 'pow4.mp3'],
         sparkImages: Array.from({length: 11}, (_, i) => `spark${i + 1}.png`),
         audioElements: [],
         imageElements: [],
         checkAllLoaded() {
-            if (this.audioLoaded && this.imageLoaded && !this.allLoaded) {
+            if (this.audioLoaded && this.imageLoaded && this.bgmLoaded && this.videoLoaded && !this.allLoaded) {
                 this.allLoaded = true;
                 console.log('所有资源加载完成');
                 // 显示开始按钮
@@ -42,6 +44,23 @@ document.addEventListener('DOMContentLoaded', function() {
         const basePath = './assets/';
         let audioLoadedCount = 0;
         let imageLoadedCount = 0;
+        
+        // 预加载背景音乐
+        backgroundMusic.addEventListener('canplaythrough', () => {
+            preloadState.bgmLoaded = true;
+            console.log('背景音乐预加载完成');
+            preloadState.checkAllLoaded();
+        }, { once: true });
+        
+        // 预加载视频
+        videoPlayer.addEventListener('canplaythrough', () => {
+            preloadState.videoLoaded = true;
+            console.log('视频预加载完成');
+            preloadState.checkAllLoaded();
+        }, { once: true });
+        
+        // 强制加载视频
+        videoPlayer.load();
         
         // 预加载音频
         preloadState.audioFiles.forEach(file => {
@@ -182,11 +201,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // 设置背景音乐音量和循环
     backgroundMusic.volume = 0.1;
     backgroundMusic.loop = true;
-
-    // 尝试自动播放背景音乐
-    backgroundMusic.play().catch(function(error) {
-        console.log("自动播放失败，需要用户交互才能播放音频:", error);
-    });
 
     // 添加键盘事件监听
     document.addEventListener('keydown', function(event) {
