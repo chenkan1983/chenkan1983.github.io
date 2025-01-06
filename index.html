@@ -21,9 +21,13 @@
     height: 100vh;
     position: relative;
 }
+.banner .content {
+    text-align: center;
+}
 .banner .content .title{
     font-size: 6em;
     font-family: 'Times New Roman', Times, serif;
+    margin-bottom: 20px;
 }
 .banner::before {
     content: '';
@@ -36,23 +40,101 @@
     background-position: center;
     z-index: -1;
 
-    -webkit-mask-image: url("./image/ezgif.gif");
+    -webkit-mask-image: url("https://blog.nicecmx.top/image/ezgif.gif");
     -webkit-mask-size: cover;
     /* -webkit-mask-repeat: no-repeat; */
     -webkit-mask-position: center;
-    mask-image: url("./image/ezgif.gif");
+    mask-image: url("https://blog.nicecmx.top/image/ezgif.gif");
     mask-size: cover;
     /* mask-repeat: no-repeat; */
     mask-position: center;
 }
+
+/* 添加播放按钮样式 */
+.play-button {
+    margin: 0 auto;
+    font-size: 3em;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+    opacity: 0.8;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: fit-content;
+}
+
+.play-button:hover {
+    transform: scale(1.1);
+    opacity: 1;
+}
+
+/* 添加动画类 */
+.banner.animate::before {
+    animation: maskAnimation 3s forwards;
+}
+
+@keyframes maskAnimation {
+    from {
+        -webkit-mask-position: 0% 0%;
+        mask-position: 0% 0%;
+    }
+    to {
+        -webkit-mask-position: 100% 100%;
+        mask-position: 100% 100%;
+    }
+}
 </style>
 <body>
+    <audio id="bgMusic" loop>
+        <source src="assets/audio/new-year-new-synth.mp3" type="audio/mp3">
+    </audio>
+
+    <div id="musicControl" style="position: fixed; top: 20px; right: 20px; cursor: pointer; z-index: 1000;">
+        🎵
+    </div>
+
     <div class="banner">
         <div class="content">
             <div class="title">
                 NICECMX
             </div>
+            <!-- 添加播放按钮 -->
+            <div class="play-button" id="playButton">▶️</div>
         </div>
     </div>
+
+    <script>
+        const music = document.getElementById('bgMusic');
+        const musicControl = document.getElementById('musicControl');
+        const playButton = document.getElementById('playButton');
+        const banner = document.querySelector('.banner');
+        let isPlaying = false;
+
+        // 添加新的播放按钮点击事件
+        playButton.addEventListener('click', function() {
+            if (!isPlaying) {
+                // 播放音乐
+                music.play();
+                isPlaying = true;
+                
+                // 更改播放按钮状态
+                playButton.style.display = 'none';
+                
+                // 触发水墨动画
+                banner.classList.add('animate');
+            }
+        });
+
+        // 音乐控制按钮事件
+        musicControl.addEventListener('click', function() {
+            if (music.paused) {
+                music.play();
+                musicControl.textContent = '🎵';
+            } else {
+                music.pause();
+                musicControl.textContent = '🔇';
+            }
+        });
+    </script>
 </body>
 </html>
