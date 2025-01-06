@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', function() {
         audioLoaded: false,
         imageLoaded: false,
         bgmLoaded: false,
-        videoLoaded: false,
+        videoLoaded: !videoPlayer,
         allLoaded: false,
         audioFiles: ['pow1.mp3', 'pow2.mp3', 'pow3.mp3', 'pow4.mp3'],
         sparkImages: Array.from({length: 11}, (_, i) => `spark${i + 1}.png`),
@@ -52,15 +52,17 @@ document.addEventListener('DOMContentLoaded', function() {
             preloadState.checkAllLoaded();
         }, { once: true });
         
-        // 预加载视频
-        videoPlayer.addEventListener('canplaythrough', () => {
-            preloadState.videoLoaded = true;
-            console.log('视频预加载完成');
-            preloadState.checkAllLoaded();
-        }, { once: true });
-        
-        // 强制加载视频
-        videoPlayer.load();
+        // 如果存在视频元素，则预加载视频
+        if (videoPlayer) {
+            videoPlayer.addEventListener('canplaythrough', () => {
+                preloadState.videoLoaded = true;
+                console.log('视频预加载完成');
+                preloadState.checkAllLoaded();
+            }, { once: true });
+            
+            // 强制加载视频
+            videoPlayer.load();
+        }
         
         // 预加载音频
         preloadState.audioFiles.forEach(file => {
@@ -104,7 +106,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // 立即开始预加载
+    // 立即调用预加载函数
     preloadResources();
 
     // 切换到结束内容
