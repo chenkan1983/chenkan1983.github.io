@@ -17,6 +17,32 @@ document.addEventListener('DOMContentLoaded', function() {
         rightContent.style.opacity = '0';
         rightContent.style.transition = 'opacity 2s linear';
         
+        // 立即创建canvas和初始化烟花
+        const canvas = document.createElement('canvas');
+        canvas.id = 'canvas';
+        canvas.style.position = 'fixed';
+        canvas.style.top = '0';
+        canvas.style.left = '0';
+        canvas.style.width = '100%';
+        canvas.style.height = '100%';
+        canvas.style.zIndex = '1000';
+        canvas.style.pointerEvents = 'none';
+        document.body.appendChild(canvas);
+
+        // 初始化烟花效果
+        const fireworks = new Fireworks();
+        fireworks.init();
+
+        // 添加窗口大小改变时的处理
+        window.addEventListener('resize', () => {
+            if (fireworks.canvas) {
+                fireworks.canvas.width = window.innerWidth;
+                fireworks.canvas.height = window.innerHeight;
+                fireworks.cx = fireworks.canvas.width / 2;
+                fireworks.cy = fireworks.canvas.height / 2;
+            }
+        });
+
         setTimeout(() => {
             videoPlayer.style.display = 'none';
             rightContent.style.display = 'none';
@@ -34,32 +60,6 @@ document.addEventListener('DOMContentLoaded', function() {
             requestAnimationFrame(() => {
                 endingContent.classList.add('fade-in');
                 endingContent.classList.add('fullscreen');
-            });
-
-            // 创建canvas元素
-            const canvas = document.createElement('canvas');
-            canvas.id = 'canvas';
-            canvas.style.position = 'fixed';
-            canvas.style.top = '0';
-            canvas.style.left = '0';
-            canvas.style.width = '100%';
-            canvas.style.height = '100%';
-            canvas.style.zIndex = '1000';
-            canvas.style.pointerEvents = 'none';
-            document.body.appendChild(canvas);
-
-            // 初始化烟花效果
-            const fireworks = new Fireworks();
-            fireworks.init();
-
-            // 添加窗口大小改变时的处理
-            window.addEventListener('resize', () => {
-                if (fireworks.canvas) {
-                    fireworks.canvas.width = window.innerWidth;
-                    fireworks.canvas.height = window.innerHeight;
-                    fireworks.cx = fireworks.canvas.width / 2;
-                    fireworks.cy = fireworks.canvas.height / 2;
-                }
             });
         }, 500);
     }
@@ -473,5 +473,4 @@ document.addEventListener('DOMContentLoaded', function() {
             requestAnimationFrame(() => this.frame());
         }
     }
-
 }); 
