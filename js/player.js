@@ -9,6 +9,29 @@ document.addEventListener('DOMContentLoaded', function() {
     let isPlaying = false;
     let timer = null;
 
+    // 添加资源预加载函数
+    function preloadResources() {
+        const audioFiles = ['pow1.mp3', 'pow2.mp3', 'pow3.mp3', 'pow4.mp3'];
+        const sparkImages = Array.from({length: 11}, (_, i) => `spark${i + 1}.png`);
+        const basePath = './assets/';
+        
+        // 预加载音频
+        audioFiles.forEach(file => {
+            const audio = new Audio();
+            audio.preload = 'auto';
+            audio.src = basePath + 'audio/' + file;
+        });
+
+        // 预加载图片
+        sparkImages.forEach(file => {
+            const img = new Image();
+            img.src = basePath + 'images/' + file;
+        });
+    }
+
+    // 立即开始预加载
+    preloadResources();
+
     // 切换到结束内容
     function switchToEnding() {
         // 添加淡出效果
@@ -50,6 +73,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // 初始化烟花效果
             const fireworks = new Fireworks();
+            
+            // 由于资源已预加载，可以直接初始化
             fireworks.init();
 
             // 添加窗口大小改变时的处理
@@ -138,7 +163,7 @@ document.addEventListener('DOMContentLoaded', function() {
             this.yaw = 0;
             this.showFlash = false;
             this.audioPool = [];
-            this.audioLoaded = false;
+            this.audioLoaded = true; // 由于已预加载，可以直接设置为 true
         }
 
         init() {
@@ -149,43 +174,24 @@ document.addEventListener('DOMContentLoaded', function() {
             this.cx = this.canvas.width / 2;
             this.cy = this.canvas.height / 2;
 
-            let loadedImages = 0;
+            // 初始化音频池
+            const audioFiles = ['pow1.mp3', 'pow2.mp3', 'pow3.mp3', 'pow4.mp3'];
+            audioFiles.forEach(file => {
+                for (let i = 0; i < 3; i++) {
+                    const audio = new Audio(this.s + "audio/" + file);
+                    this.audioPool.push(audio);
+                }
+            });
+
+            // 加载烟花图片
             for (let i = 1; i <= 11; i++) {
                 const sparkPic = new Image();
-                sparkPic.onload = () => {
-                    loadedImages++;
-                    if (loadedImages === 11) {
-                        this.frame();
-                    }
-                };
                 sparkPic.src = this.s + "images/spark" + i + ".png";
                 this.sparkPics.push(sparkPic);
             }
 
-            this.preloadAudio();
-        }
-
-        preloadAudio() {
-            const audioFiles = ['pow1.mp3', 'pow2.mp3', 'pow3.mp3', 'pow4.mp3'];
-            let loadedCount = 0;
-
-            audioFiles.forEach((file, index) => {
-                const audio = new Audio(this.s + "audio/" + file);
-                audio.preload = 'auto';
-                
-                audio.addEventListener('canplaythrough', () => {
-                    loadedCount++;
-                    if (loadedCount === audioFiles.length) {
-                        this.audioLoaded = true;
-                    }
-                });
-
-                // 创建多个副本以支持同时播放
-                for (let i = 0; i < 3; i++) {
-                    const audioClone = audio.cloneNode();
-                    this.audioPool.push(audioClone);
-                }
-            });
+            // 直接开始动画
+            this.frame();
         }
 
         rasterizePoint(x, y, z) {
