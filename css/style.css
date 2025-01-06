@@ -41,7 +41,7 @@ body {
 .start-button {
     position: absolute;
     top: 20px;
-    left: 20px;
+    right: 20px;
     padding: 10px 20px;
     background-color: #ff4d4f;
     color: white;
