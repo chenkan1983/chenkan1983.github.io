@@ -9,14 +9,32 @@ document.addEventListener('DOMContentLoaded', function() {
     let isPlaying = false;
     let timer = null;
 
-    // 添加预加载状态追踪
+    // 初始时隐藏开始按钮
+    startButton.style.display = 'none';
+
+    // 修改预加载状态追踪
     const preloadState = {
         audioLoaded: false,
         imageLoaded: false,
+        allLoaded: false,
         audioFiles: ['pow1.mp3', 'pow2.mp3', 'pow3.mp3', 'pow4.mp3'],
         sparkImages: Array.from({length: 11}, (_, i) => `spark${i + 1}.png`),
         audioElements: [],
-        imageElements: []
+        imageElements: [],
+        checkAllLoaded() {
+            if (this.audioLoaded && this.imageLoaded && !this.allLoaded) {
+                this.allLoaded = true;
+                console.log('所有资源加载完成');
+                // 显示开始按钮
+                startButton.style.display = 'block';
+                // 可以添加淡入效果
+                startButton.style.opacity = '0';
+                requestAnimationFrame(() => {
+                    startButton.style.transition = 'opacity 0.5s ease-in';
+                    startButton.style.opacity = '1';
+                });
+            }
+        }
     };
 
     // 改进资源预加载函数
@@ -42,6 +60,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         preloadState.audioLoaded = true;
                         preloadState.audioElements = [...preloadState.audioElements, audioClone];
                         console.log('音频预加载完成');
+                        preloadState.checkAllLoaded();
                     }
                 }, { once: true });
 
@@ -58,6 +77,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (imageLoadedCount === preloadState.sparkImages.length) {
                     preloadState.imageLoaded = true;
                     console.log('图片预加载完成');
+                    preloadState.checkAllLoaded();
                 }
             };
             img.src = basePath + 'images/' + file;
