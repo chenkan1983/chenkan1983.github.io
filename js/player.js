@@ -9,23 +9,59 @@ document.addEventListener('DOMContentLoaded', function() {
     let isPlaying = false;
     let timer = null;
 
-    // 添加资源预加载函数
+    // 添加预加载状态追踪
+    const preloadState = {
+        audioLoaded: false,
+        imageLoaded: false,
+        audioFiles: ['pow1.mp3', 'pow2.mp3', 'pow3.mp3', 'pow4.mp3'],
+        sparkImages: Array.from({length: 11}, (_, i) => `spark${i + 1}.png`),
+        audioElements: [],
+        imageElements: []
+    };
+
+    // 改进资源预加载函数
     function preloadResources() {
-        const audioFiles = ['pow1.mp3', 'pow2.mp3', 'pow3.mp3', 'pow4.mp3'];
-        const sparkImages = Array.from({length: 11}, (_, i) => `spark${i + 1}.png`);
         const basePath = './assets/';
+        let audioLoadedCount = 0;
+        let imageLoadedCount = 0;
         
         // 预加载音频
-        audioFiles.forEach(file => {
+        preloadState.audioFiles.forEach(file => {
             const audio = new Audio();
             audio.preload = 'auto';
-            audio.src = basePath + 'audio/' + file;
+            
+            // 创建多个副本
+            for (let i = 0; i < 3; i++) {
+                const audioClone = new Audio();
+                audioClone.preload = 'auto';
+                audioClone.src = basePath + 'audio/' + file;
+                
+                audioClone.addEventListener('canplaythrough', () => {
+                    audioLoadedCount++;
+                    if (audioLoadedCount === preloadState.audioFiles.length * 3) {
+                        preloadState.audioLoaded = true;
+                        preloadState.audioElements = [...preloadState.audioElements, audioClone];
+                        console.log('音频预加载完成');
+                    }
+                }, { once: true });
+
+                // 强制加载
+                audioClone.load();
+            }
         });
 
         // 预加载图片
-        sparkImages.forEach(file => {
+        preloadState.sparkImages.forEach(file => {
             const img = new Image();
+            img.onload = () => {
+                imageLoadedCount++;
+                if (imageLoadedCount === preloadState.sparkImages.length) {
+                    preloadState.imageLoaded = true;
+                    console.log('图片预加载完成');
+                }
+            };
             img.src = basePath + 'images/' + file;
+            preloadState.imageElements.push(img);
         });
     }
 
@@ -162,8 +198,8 @@ document.addEventListener('DOMContentLoaded', function() {
             this.pitch = 0;
             this.yaw = 0;
             this.showFlash = false;
-            this.audioPool = [];
-            this.audioLoaded = true; // 由于已预加载，可以直接设置为 true
+            this.audioPool = preloadState.audioElements;
+            this.audioLoaded = preloadState.audioLoaded;
         }
 
         init() {
@@ -174,20 +210,18 @@ document.addEventListener('DOMContentLoaded', function() {
             this.cx = this.canvas.width / 2;
             this.cy = this.canvas.height / 2;
 
-            // 初始化音频池
-            const audioFiles = ['pow1.mp3', 'pow2.mp3', 'pow3.mp3', 'pow4.mp3'];
-            audioFiles.forEach(file => {
-                for (let i = 0; i < 3; i++) {
-                    const audio = new Audio(this.s + "audio/" + file);
-                    this.audioPool.push(audio);
-                }
-            });
+            // 使用预加载的图片
+            this.sparkPics = preloadState.imageElements;
 
-            // 加载烟花图片
-            for (let i = 1; i <= 11; i++) {
-                const sparkPic = new Image();
-                sparkPic.src = this.s + "images/spark" + i + ".png";
-                this.sparkPics.push(sparkPic);
+            // 如果音频还没加载完，等待加载
+            if (!this.audioLoaded) {
+                const checkAudioLoaded = setInterval(() => {
+                    if (preloadState.audioLoaded) {
+                        this.audioLoaded = true;
+                        this.audioPool = preloadState.audioElements;
+                        clearInterval(checkAudioLoaded);
+                    }
+                }, 100);
             }
 
             // 直接开始动画
