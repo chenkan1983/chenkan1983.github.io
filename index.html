@@ -96,10 +96,6 @@
         <source src="assets/audio/new-year-new-synth.mp3" type="audio/mp3">
     </audio>
 
-    <div id="musicControl" style="position: fixed; top: 20px; right: 20px; cursor: pointer; z-index: 1000;">
-        🎵
-    </div>
-
     <div class="banner">
         <div class="content">
             <div class="title">
@@ -112,7 +108,6 @@
 
     <script>
         const music = document.getElementById('bgMusic');
-        const musicControl = document.getElementById('musicControl');
         const playButton = document.getElementById('playButton');
         const banner = document.querySelector('.banner');
         let isPlaying = false;
@@ -135,16 +130,7 @@
             }
         });
 
-        // 音乐控制按钮事件
-        musicControl.addEventListener('click', function() {
-            if (music.paused) {
-                music.play();
-                musicControl.textContent = '🎵';
-            } else {
-                music.pause();
-                musicControl.textContent = '🔇';
-            }
-        });
+    
     </script>
 </body>
 </html>
