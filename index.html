@@ -1,97 +1,58 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>个人网站</title>
-    <style>
-        /* 这里可以添加你的自定义样式 */
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        header {
-            background-color: #333;
-            color: white;
-            padding: 10px 20px;
-            text-align: center;
-        }
-
-        nav {
-            background-color: #444;
-            padding: 10px 20px;
-            text-align: center;
-        }
-
-        nav a {
-            color: white;
-            text-decoration: none;
-            margin: 0 10px;
-        }
-
-        nav a:hover {
-            text-decoration: underline;
-        }
-
-        .container {
-            max-width: 800px;
-            margin: 20px auto;
-            padding: 0 20px;
-        }
-
-        footer {
-            background-color: #333;
-            color: white;
-            text-align: center;
-            padding: 10px 0;
-            position: fixed;
-            bottom: 0;
-            width: 100%;
-        }
-    </style>
+    <title>首页</title>
+    <!-- <link rel="stylesheet" href="style.css"> -->
 </head>
+<style>
+    body {
+    margin: 0;
+    padding: 0;
+    background-color: #000;
+    color: #fff;
+}   
 
+.banner {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    position: relative;
+}
+.banner .content .title{
+    font-size: 6em;
+    font-family: 'Times New Roman', Times, serif;
+}
+.banner::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    /* width: 100%;
+    height: 100%; */
+    background-image: url("./image/bg.jpg");
+    background-size: cover;
+    background-position: center;
+    z-index: -1;
+
+    -webkit-mask-image: url("./image/ezgif.gif");
+    -webkit-mask-size: cover;
+    /* -webkit-mask-repeat: no-repeat; */
+    -webkit-mask-position: center;
+    mask-image: url("./image/ezgif.gif");
+    mask-size: cover;
+    /* mask-repeat: no-repeat; */
+    mask-position: center;
+}
+</style>
 <body>
-    <header>
-        <h1>个人网站</h1>
-    </header>
-    <nav>
-        <a href="#home">首页</a>
-        <a href="#about">关于我</a>
-        <a href="#services">服务</a>
-        <a href="#contact">联系方式</a>
-    </nav>
-    <div class="container">
-        <section id="home">
-            <h2>欢迎访问我的个人网站</h2>
-            <p>这里是我的个人网站，感谢您的访问！</p>
-        </section>
-        <section id="about">
-            <h2>关于我</h2>
-            <p>我是一个码农，对国漫很感兴趣。</p>
-        </section>
-        <section id="services">
-            <h2>服务</h2>
-            <ul>
-                <li>服务项目一</li>
-                <li>服务项目二</li>
-                <li>服务项目三</li>
-            </ul>
-        </section>
-        <section id="contact">
-            <h2>联系方式</h2>
-            <p>邮箱：andychenkan@163.com</p>
-            <p>QQ：150076960</p>
-        </section>
+    <div class="banner">
+        <div class="content">
+            <div class="title">
+                NICECMX
+            </div>
+        </div>
     </div>
-    <footer>
-        <p>&copy; 2024 个人网站</p>
-    </footer>
 </body>
-
 </html>
