@@ -1,0 +1,420 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+@property --angle {
+    syntax: '<angle>';
+    inherits: false;
+    initial-value: 0deg;
+}
+
+:root {
+    --gold: hsl(30 80% 60%);
+    --gold1: hsl(30 40% 60%);
+    --clr1: hsl(0 100% 20%);
+    --clr2: hsl(0 100% 40%);
+    --clr-bg: black;
+}
+
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    
+    min-height: 100vh;
+    background-color: var(--clr-bg);
+    background-image: radial-gradient(black, rgb(15, 23, 42));
+    background-attachment: fixed;
+    color: rgb(234,233,233);
+}
+
+.container {
+    position: relative;
+    width: 100vw;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.start-button {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background-color: #ff4d4f;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    z-index: 100;
+}
+
+.start-button:hover {
+    background-color: #ff7875;
+}
+
+.content-wrapper {
+    display: flex;
+    flex: 1;
+    position: relative;
+}
+
+.left-content {
+    position: absolute;
+    left: 25%;
+    /* transform: translateX(-50%); */
+    width: 50%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: all 1s linear;
+    overflow: hidden;
+}
+
+.right-content {
+    position: absolute;
+    right: 0;
+    width: 50%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 1s linear;
+}
+
+.video-player {
+    width: 40%;
+    height: auto;
+    margin: 0 auto;
+    opacity: 0;
+    visibility: hidden;
+    clip-path: circle(0% at center);
+    transition: all 3s ease-in;
+}
+
+.video-player.show {
+    opacity: 1;
+    visibility: visible;
+    clip-path: ellipse(50% 40% at 50% 50%);
+}
+
+.video-player.blinds {
+    clip-path: ellipse(50% 40% at 50% 50%);
+}
+
+.lantern {
+    --width: 400px;
+    --pattern-size: calc(var(--width) / 3);
+    --crown-color: var(--gold);
+    --chord-color: var(--gold);
+    --pattern-color1: var(--clr1);
+    --pattern-color2: var(--clr2);
+    --pattern-color3: var(--gold);
+    width: var(--width);
+    aspect-ratio: 3/2;
+
+}
+
+.lantern>.up {
+    position: relative;
+    width: 20%;
+    aspect-ratio: 2/1;
+    margin-inline: auto;
+    background-size: 50% 100%;
+    background-image: conic-gradient(from 225deg,
+            var(--crown-color) 75%,
+            #0000 0);
+}
+
+.lantern>.up::before {
+    content: "";
+    position: absolute;
+    inset: -100vh 45% 100%;
+    background-color: var(--chord-color);
+}
+
+.lantern>.ball {
+    aspect-ratio: 3/2;
+    border-radius: 50%;
+
+    --pattern-image: radial-gradient(100% 100%,
+            #0000 calc(50% - 1px),
+            var(--pattern-color1) 50% calc(62.5% - 1px),
+            var(--pattern-color3) 62.5%);
+    background-color: var(--pattern-color2);
+    background-size: var(--pattern-size) var(--pattern-size);
+    background-position: 50%,
+        calc(50% + var(--pattern-size)/2) calc(50% + var(--pattern-size)/2);
+    background-image: var(--pattern-image), var(--pattern-image);
+}
+
+.lantern>.down {
+    position: relative;
+    width: 20%;
+    aspect-ratio: 2/1;
+    margin-inline: auto;
+    background: repeating-linear-gradient(to right,
+            var(--gold) 0,
+            var(--gold) 4%,
+            transparent 4%,
+            transparent 8%);
+}
+
+h1 {
+    margin-top: 10px;
+    font-size: 3rem;
+    color: var(--gold1);
+    text-shadow: 1px 1px 0 var(--gold1);
+}
+
+.content-wrapper.active {
+    justify-content: flex-start;
+}
+
+.right-content.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.left-content.active {
+    left: 0;
+    transform: translateX(0);
+    width: 100%;
+}
+
+/* 添加结束页面的样式 */
+.ending-content {
+    position: absolute;
+    inset: 0;
+    width: 50%;
+    height: 100%;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    transition: all 1s linear;
+    z-index: 1000;
+}
+
+.ending-content .happy-container {
+    transform: translateY(30px);
+    opacity: 0;
+    transition: all 2s linear;
+}
+
+.ending-content.fade-in {
+    opacity: 1;
+    display: flex;
+    pointer-events: auto;
+}
+
+.ending-content.fade-in .happy-container {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+/* 添加新的全屏样式 */
+.ending-content.fullscreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: var(--clr-bg);
+    background-image: radial-gradient(black, rgb(15, 23, 42));
+}
+
+.ending-content.fullscreen .happy-container {
+    transform: scale(1.1);
+}
+
+.happy-container {
+    /* margin: 0; */
+    position: relative;
+    width: min(100%, 600px);
+    color: rgb(234, 233, 233);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    padding: 0 20px;
+    z-index: 1000;
+}
+
+/* 从 style2.css 复制需要的样式 */
+.happy-container h1 {
+    font-size: clamp(1.6rem, 7vw - 0.1rem, 2.4rem);
+    font-weight: 400;
+    text-align: left;
+    width: 100%;
+    margin-bottom: 0;
+}
+
+.happy-container p {
+    position: relative;
+    top: auto;
+    right: 0;
+    width: 100%;
+    text-align: right;
+    margin: 1rem 0 0;
+    line-height: 1.5;
+    font-size: clamp(1.2rem, 5vw - 0.1rem, 1.5rem);
+}
+
+
+.happy {
+    --line-thickness: clamp(1px, 1.5vw + 1px, 7px);
+    --line-radius: var(--line-thickness);
+    --line-color: var(--clr-bg);
+    --line-offset: calc(var(--line-thickness) * -1);
+    --line-radius: 5px;
+
+    display: grid;
+    gap: var(--line-thickness);
+    grid-auto-flow: column;
+    grid-template-columns: repeat(4, 1fr);
+    width: 100%;
+    margin: 2rem 0;
+}
+.happy > * {
+    grid-row: span 2;
+    position: relative;
+    aspect-ratio: 1/1;
+    background-image: conic-gradient(
+        from var(--angle) at 50% 150% in hsl longer hue, 
+    red,
+    purple,
+    red
+    );
+    background-attachment: fixed;
+    background-size: 100%;
+    border-radius: clamp(2px, 1.5vw + 1px, 15px);
+    animation: neon-rotate 10s linear infinite;
+}
+
+.happy > *:nth-child(1) {
+    animation: neon-rotate 10s linear infinite;
+    
+}
+.happy > *:nth-child(2) {
+    animation: neon-rotate 13s linear infinite;
+}
+.happy > *:nth-child(3) {
+    animation: neon-rotate 16s linear infinite;
+}
+.happy > *:nth-child(4) {
+    animation: neon-rotate 19s linear infinite;
+}
+
+@keyframes neon-rotate {
+    from {
+        --angle: 0deg;
+    }
+    to {
+        --angle: 360deg;
+    }
+}
+
+.happy>*::before,
+.happy>*::after {
+    content: '';
+    position: absolute;
+    background-color: var(--line-color);
+    border-radius: var(--radius-tl, 0) var(--radius-tr, 0) var(--radius-br, 0) var(--radius-bl, 0);
+    z-index: 2;
+    top: var(--line-top, auto);
+    left: var(--line-left, auto);
+    right: var(--line-right, auto);
+    bottom: var(--line-bottom, auto);
+    translate: var(--translate-x, 0) var(--translate-y, 0);
+    width: var(--line-width, 60%);
+    height: var(--line-height, 0);
+}
+
+.happy>*:nth-child(1)::before,
+.happy>*:nth-child(3)::before {
+    --radius-tr: var(--line-radius);
+    --radius-br: var(--line-radius);
+    --line-top: 30%;
+    --line-height: var(--line-thickness);
+}
+
+.happy>*:nth-child(1)::after,
+.happy>*:nth-child(3)::after {
+    --radius-tl: var(--line-radius);
+    --radius-bl: var(--line-radius);
+    --line-right: -1px;
+    --line-bottom: 30%;
+    --line-height: var(--line-thickness);
+}
+
+.happy>*:nth-child(2)::before {
+    --line-top: 30%;
+    --line-left: 50%;
+    --translate-x: -50%;
+    --line-width: calc(var(--line-thickness) * 1.1);
+    --line-height: 40%;
+    --radius-tl: var(--line-radius);
+    --radius-tr: var(--line-radius);
+    --radius-br: var(--line-radius);
+    --radius-bl: var(--line-radius);
+}
+
+.happy>*:nth-child(4)::before {
+    --line-top: 30%;
+    --line-right: -1px;
+    --line-height: var(--line-thickness);
+    --radius-bl: var(--line-radius);
+    --radius-tl: var(--line-radius);
+}
+
+.happy>*:nth-child(4)::after {
+    --line-bottom: 30%;
+    --line-height: var(--line-thickness);
+    --radius-tr: var(--line-radius);
+    --radius-br: var(--line-radius);
+}
+
+.initial-content {
+    opacity: 1;
+    transition: all 1s linear;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    transform: translateX(0);
+}
+
+.initial-content.fade-out {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.ending-content.fade-in {
+    opacity: 1;
+    display: flex;
+    pointer-events: auto;
+}
+
+.initial-content.active {
+    transform: translateX(-50%);
+    width: 50%;
+}
+
+#canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+}
+

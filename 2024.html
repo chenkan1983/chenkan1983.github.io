@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2024年度工作总结</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <div class="container">
+        <button id="startButton" class="start-button">开始播放</button>
+        <audio id="backgroundMusic">
+            <source src="./assets/audio/bgm.mp3" type="audio/mpeg">
+            您的浏览器不支持音频播放。
+        </audio>
+        <div class="content-wrapper">
+            <div class="left-content">
+                <div class="initial-content">
+                    <div class="lantern">
+                        <div class="up"></div>
+                        <div class="ball"></div>
+                        <div class="down"></div>
+                    </div>
+                    <h1>2025</h1>
+                </div>
+                <div class="ending-content">
+                    <canvas id="canvas"></canvas>
+
+                    <div class="happy-container">
+                        <h1>祝</h1>
+                        <div class="happy">
+                            <div></div>
+                            <div></div>
+                            <div></div>
+                            <div></div>
+                        </div>
+                        <p>所愿皆所成！多喜乐、长安宁！</p>
+                    </div>
+                </div>
+            </div>
+            <div class="right-content">
+                <video id="videoPlayer" class="video-player">
+                    <source src="./assets/video/1.mp4" type="video/mp4">
+                    您的浏览器不支持视频播放。
+                </video>
+            </div>
+        </div>
+    </div>
+    <script src="js/player.js"></script>
+</body>
+
+</html>
