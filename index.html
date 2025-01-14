@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>首页</title>
-    <!-- <link rel="stylesheet" href="style.css"> -->
 </head>
 <style>
     body {
@@ -92,6 +91,16 @@
 }
 </style>
 <body>
+    <!-- 添加导航菜单 -->
+    <nav>
+        <ul style="list-style-type: none; padding: 0; display: flex; justify-content: center; background-color: #333;">
+            <li style="margin: 0 15px;"><a href="index.html" style="color: white; text-decoration: none;">首页</a></li>
+            <li style="margin: 0 15px;"><a href="about.html" style="color: white; text-decoration: none;">关于我</a></li>
+            <li style="margin: 0 15px;"><a href="blog.html" style="color: white; text-decoration: none;">博客</a></li>
+            <li style="margin: 0 15px;"><a href="share.html" style="color: white; text-decoration: none;">分享</a></li>
+        </ul>
+    </nav>
+
     <audio id="bgMusic" loop>
         <source src="assets/audio/new-year-new-synth.mp3" type="audio/mp3">
     </audio>
@@ -129,8 +138,6 @@
                 }, 100);
             }
         });
-
-    
     </script>
 </body>
 </html>
