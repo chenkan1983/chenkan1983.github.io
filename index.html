@@ -92,7 +92,7 @@
 </style>
 <body>
     <!-- 添加导航菜单 -->
-    <nav>
+    <nav style="display: none;">
         <ul style="list-style-type: none; padding: 0; display: flex; justify-content: center; background-color: #333;">
             <li style="margin: 0 15px;"><a href="water_ripple.html" style="color: white; text-decoration: none;">水波荡漾</a></li>
         </ul>
@@ -132,6 +132,10 @@
                 banner.classList.add('show-mask');
                 setTimeout(() => {
                     banner.classList.add('animate');
+                    // 在动画完成后显示导航按钮
+                    setTimeout(() => {
+                        document.querySelector('nav').style.display = 'block';
+                    }, 3000); // 这里的3000毫秒应与动画时长一致
                 }, 100);
             }
         });
