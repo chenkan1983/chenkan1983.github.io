@@ -12,6 +12,7 @@
         padding: 0;
         background-color: #000;
         color: #fff;
+        overflow-x: hidden;
     }
 
     .banner {
@@ -99,13 +100,17 @@
     #submenu {
         display: none;
         position: absolute;
-        background-color: transparent; /* 改为透明背景 */
+        background-color: rgba(0, 0, 0, 0.6);
         list-style-type: none;
-        padding: 10px;
-        margin: 0;
-        border-radius: 4px;
-        min-width: 120px;
+        padding: 15px;
+        margin: 10px 0 0 0;
+        border-radius: 8px;
+        min-width: 150px;
         z-index: 1000;
+        backdrop-filter: blur(5px);
+        -webkit-backdrop-filter: blur(5px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        right: 0;
     }
 
     .newsContainer {
@@ -182,9 +187,21 @@
         background-color: rgba(255, 255, 255, 0.2);
     }
 
-    /* 调整子菜单项的间距 */
+    /* 调整子菜单项的间距和样式 */
     #submenu li {
-        margin: 5px 0;
+        margin: 12px 0; /* 增加菜单项之间的间距 */
+    }
+
+    #submenu a {
+        display: block; /* 让链接占满整行 */
+        padding: 8px 15px; /* 增加内边距 */
+        border-radius: 6px; /* 添加圆角 */
+        transition: all 0.3s ease; /* 添加过渡效果 */
+    }
+
+    #submenu a:hover {
+        background-color: rgba(255, 255, 255, 0.2);
+        transform: translateX(5px); /* 悬停时向右移动 */
     }
 </style>
 
@@ -196,6 +213,9 @@
                 <a href="#" id="menuToggle">动画</a>
                 <ul id="submenu">
                     <li><a href="water_ripple.html">水波荡漾</a></li>
+                    <li><a href="fireworks_1.html">烟花效果1</a></li>
+                    <li><a href="fireworks_2.html">烟花效果2</a></li>
+                    <li><a href="fireworks_3.html">烟花效果3</a></li>
                 </ul>
             </li>
             <li style="margin: 0 15px;">
