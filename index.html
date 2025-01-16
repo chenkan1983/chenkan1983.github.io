@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,94 +8,199 @@
 </head>
 <style>
     body {
-    margin: 0;
-    padding: 0;
-    background-color: #000;
-    color: #fff;
-}   
-
-.banner {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    position: relative;
-}
-.banner .content {
-    text-align: center;
-}
-.banner .content .title{
-    font-size: 6em;
-    font-family: 'Times New Roman', Times, serif;
-    margin-bottom: 20px;
-}
-.banner::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    /* 背景图片一直存在，但初始透明 */
-    background-image: url("./image/bg.jpg");
-    background-size: cover;
-    background-position: center;
-    opacity: 0;
-    transition: opacity 1s ease;
-    z-index: -1;
-
-    /* 初始状态不显示GIF */
-    -webkit-mask-image: none;
-    -webkit-mask-size: cover;
-    -webkit-mask-position: center;
-    mask-image: none;
-    mask-size: cover;
-    mask-position: center;
-}
-
-/* 显示GIF时同时显示背景 */
-.banner.show-mask::before {
-    opacity: 1;
-    -webkit-mask-image: url("https://blog.nicecmx.top/image/ezgif.gif");
-    mask-image: url("https://blog.nicecmx.top/image/ezgif.gif");
-}
-
-/* 修改动画类，只在显示GIF时生效 */
-.banner.show-mask.animate::before {
-    animation: maskAnimation 3s forwards;
-}
-
-/* 添加播放按钮样式 */
-.play-button {
-    margin: 0 auto;
-    font-size: 3em;
-    cursor: pointer;
-    transition: transform 0.3s ease;
-    opacity: 0.8;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: fit-content;
-}
-
-.play-button:hover {
-    transform: scale(1.1);
-    opacity: 1;
-}
-
-@keyframes maskAnimation {
-    from {
-        -webkit-mask-position: 0% 0%;
-        mask-position: 0% 0%;
+        margin: 0;
+        padding: 0;
+        background-color: #000;
+        color: #fff;
     }
-    to {
-        -webkit-mask-position: 100% 100%;
-        mask-position: 100% 100%;
+
+    .banner {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        position: relative;
     }
-}
+
+    .banner .content {
+        text-align: center;
+    }
+
+    .banner .content .title {
+        font-size: 6em;
+        font-family: 'Times New Roman', Times, serif;
+        margin-bottom: 20px;
+    }
+
+    .banner::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        /* 背景图片一直存在，但初始透明 */
+        background-image: url("./image/bg.jpg");
+        background-size: cover;
+        background-position: center;
+        opacity: 0;
+        transition: opacity 1s ease;
+        z-index: -1;
+
+        /* 初始状态不显示GIF */
+        -webkit-mask-image: none;
+        -webkit-mask-size: cover;
+        -webkit-mask-position: center;
+        mask-image: none;
+        mask-size: cover;
+        mask-position: center;
+    }
+
+    /* 显示GIF时同时显示背景 */
+    .banner.show-mask::before {
+        opacity: 1;
+        -webkit-mask-image: url("https://blog.nicecmx.top/image/ezgif.gif");
+        mask-image: url("https://blog.nicecmx.top/image/ezgif.gif");
+    }
+
+    /* 修改动画类，只在显示GIF时生效 */
+    .banner.show-mask.animate::before {
+        animation: maskAnimation 3s forwards;
+    }
+
+    /* 添加播放按钮样式 */
+    .play-button {
+        margin: 0 auto;
+        font-size: 3em;
+        cursor: pointer;
+        transition: transform 0.3s ease;
+        opacity: 0.8;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: fit-content;
+    }
+
+    .play-button:hover {
+        transform: scale(1.1);
+        opacity: 1;
+    }
+
+    @keyframes maskAnimation {
+        from {
+            -webkit-mask-position: 0% 0%;
+            mask-position: 0% 0%;
+        }
+
+        to {
+            -webkit-mask-position: 100% 100%;
+            mask-position: 100% 100%;
+        }
+    }
+
+    /* 下拉菜单样式 */
+    #submenu {
+        display: none;
+        position: absolute;
+        background-color: transparent; /* 改为透明背景 */
+        list-style-type: none;
+        padding: 10px;
+        margin: 0;
+        border-radius: 4px;
+        min-width: 120px;
+        z-index: 1000;
+    }
+
+    .newsContainer {
+        background-color: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+        margin: 20px auto;
+        max-width: 400px;
+    }
+
+    .price {
+        font-size: 1.5em;
+        margin: 10px 0;
+    }
+
+    #newsContainer {
+        display: none;
+        position: fixed; /* 改为固定定位 */
+        top: 50%; /* 垂直居中 */
+        right: 20px; /* 距离右边距离 */
+        transform: translateY(-50%); /* 精确垂直居中 */
+        background-color: transparent; /* 透明背景 */
+        color: white; /* 白色文字 */
+        padding: 15px;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.2); /* 添加半透明边框 */
+        backdrop-filter: blur(5px); /* 背景模糊效果 */
+        -webkit-backdrop-filter: blur(5px); /* Safari 支持 */
+        z-index: 1000;
+    }
+
+    #newsContainer h2 {
+        color: white;
+        margin-bottom: 15px;
+        font-size: 1.5em;
+    }
+
+    .price {
+        font-size: 1.2em;
+        margin: 15px 0;
+        color: white;
+        text-shadow: 0 0 10px rgba(255, 255, 255, 0.3); /* 添加文字发光效果 */
+    }
+
+    /* 修改导航菜单样式 */
+    nav {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        z-index: 1000;
+        opacity: 0; /* 初始设置为透明 */
+        transition: opacity 0.5s ease; /* 添加过渡效果 */
+        display: none; /* 初始隐藏 */
+    }
+
+    nav ul {
+        list-style-type: none;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        background-color: transparent; /* 设置背景透明 */
+    }
+
+    nav a, #submenu a {
+        color: white;
+        text-decoration: none;
+        padding: 5px 10px;
+        border-radius: 4px;
+        transition: background-color 0.3s ease;
+    }
+
+    nav a:hover, #submenu a:hover {
+        background-color: rgba(255, 255, 255, 0.2);
+    }
+
+    /* 调整子菜单项的间距 */
+    #submenu li {
+        margin: 5px 0;
+    }
 </style>
+
 <body>
-    <!-- 添加导航菜单 -->
-    <nav style="display: none;">
-        <ul style="list-style-type: none; padding: 0; display: flex; justify-content: center; background-color: #333;">
-            <li style="margin: 0 15px;"><a href="water_ripple.html" style="color: white; text-decoration: none;">水波荡漾</a></li>
+    <!-- 修改导航菜单 -->
+    <nav>
+        <ul>
+            <li style="margin: 0 15px;">
+                <a href="#" id="menuToggle">动画</a>
+                <ul id="submenu">
+                    <li><a href="water_ripple.html">水波荡漾</a></li>
+                </ul>
+            </li>
+            <li style="margin: 0 15px;">
+                <a href="#" id="newsToggle">资讯</a>
+            </li>
         </ul>
     </nav>
 
@@ -112,33 +218,114 @@
         </div>
     </div>
 
+    <div id="newsContainer">
+        <h2>最新资讯</h2>
+        <div id="bitcoin-price" class="price">加载中...</div>
+        <div id="bitcoin-price-cny" class="price">加载中...</div>
+        <div id="usd-rate" class="price">加载中...</div>
+    </div>
+
     <script>
         const music = document.getElementById('bgMusic');
         const playButton = document.getElementById('playButton');
         const banner = document.querySelector('.banner');
+        const newsContainer = document.getElementById('newsContainer');
         let isPlaying = false;
 
-        // 修改播放按钮点击事件
-        playButton.addEventListener('click', function() {
-            if (!isPlaying) {
-                // 播放音乐
-                music.play();
-                isPlaying = true;
-                
-                // 更改播放按钮状态
-                playButton.style.display = 'none';
-                
-                // 显示GIF和背景，并开始动画
-                banner.classList.add('show-mask');
-                setTimeout(() => {
-                    banner.classList.add('animate');
-                    // 在动画完成后显示导航按钮
+        // 播放按钮点击事件
+        function initPlayButton() {
+            playButton.addEventListener('click', function () {
+                if (!isPlaying) {
+                    music.play().catch(function(error) {
+                        console.log("播放失败:", error);
+                    });
+                    isPlaying = true;
+                    playButton.style.display = 'none';
+                    banner.classList.add('show-mask');
                     setTimeout(() => {
-                        document.querySelector('nav').style.display = 'block';
-                    }, 3000); // 这里的3000毫秒应与动画时长一致
-                }, 100);
-            }
+                        banner.classList.add('animate');
+                        // 在动画开始3秒后显示导航栏
+                        setTimeout(() => {
+                            const nav = document.querySelector('nav');
+                            nav.style.display = 'block';
+                            // 使用延时来确保display:block生效后再设置opacity
+                            setTimeout(() => {
+                                nav.style.opacity = '1';
+                            }, 10);
+                        }, 3000); // 3秒后显示导航栏
+                    }, 100);
+                }
+            });
+        }
+
+        // 菜单点击事件
+        function initMenuToggle() {
+            const menuToggle = document.getElementById('menuToggle');
+            const submenu = document.getElementById('submenu');
+            
+            menuToggle.addEventListener('click', function (event) {
+                event.preventDefault();
+                event.stopPropagation();
+                submenu.style.display = submenu.style.display === 'block' ? 'none' : 'block';
+            });
+
+            // 点击其他地方关闭菜单
+            document.addEventListener('click', function(event) {
+                if (!menuToggle.contains(event.target)) {
+                    submenu.style.display = 'none';
+                }
+            });
+        }
+
+        // 资讯按钮点击事件
+        function initNewsToggle() {
+            const newsToggle = document.getElementById('newsToggle');
+            
+            newsToggle.addEventListener('click', function (event) {
+                event.preventDefault();
+                event.stopPropagation();
+                if (newsContainer.style.display === 'block') {
+                    newsContainer.style.display = 'none';
+                } else {
+                    newsContainer.style.display = 'block';
+                    fetchData();
+                }
+            });
+
+            // 点击其他地方关闭资讯面板
+            document.addEventListener('click', function(event) {
+                if (!newsToggle.contains(event.target) && !newsContainer.contains(event.target)) {
+                    newsContainer.style.display = 'none';
+                }
+            });
+        }
+
+        // 页面加载完成后初始化所有事件
+        document.addEventListener('DOMContentLoaded', function() {
+            initPlayButton();
+            initMenuToggle();
+            initNewsToggle();
         });
+
+        async function fetchData() {
+            try {
+                const bitcoinResponse = await fetch('https://api.coindesk.com/v1/bpi/currentprice/BTC.json');
+                const bitcoinData = await bitcoinResponse.json();
+                document.getElementById('bitcoin-price').innerText = `比特币美元价格: ${bitcoinData.bpi.USD.rate} USD`;
+                const bitcoinPriceUSD = parseFloat(bitcoinData.bpi.USD.rate.replace(/,/g, ''));
+
+                const usdResponse = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
+                const usdData = await usdResponse.json();
+                document.getElementById('usd-rate').innerText = `美元汇率: 1 USD = ${usdData.rates.CNY} CNY`;
+
+                const usdToCNY = parseFloat(usdData.rates.CNY);
+                const bitcoinPriceCNY = (bitcoinPriceUSD * usdToCNY).toFixed(2);
+                document.getElementById('bitcoin-price-cny').innerText = `比特币人民币价格: ${bitcoinPriceCNY} CNY`;
+            } catch (error) {
+                console.error('获取数据时出错:', error);
+            }
+        }
     </script>
 </body>
+
 </html>
