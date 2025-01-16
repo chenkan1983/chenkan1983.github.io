@@ -1,0 +1,79 @@
+/* 定义自定义属性 --fill，用于控制渐变填充的百分比 */
+@property --fill {
+    syntax: '<percentage>';
+    inherits: false;
+    initial-value: 100%;
+}
+
+/* 定义根元素的色相变量，用于生成不同的颜色 */
+:root {
+    --hue: 120;
+}
+
+/* 重置所有元素的默认样式 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* 设置页面整体布局为居中显示 */
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #333;
+    min-height: 100vh;
+}
+
+/* 品牌图标容器样式 */
+.brand {
+    position: relative;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    /* 这句代码的意思是允许子元素在容器中换行 */
+    flex-flow: wrap;
+    gap: 2rem; /* 设置图标之间的间距 */
+}
+
+/* 单个图标链接的样式 */
+.brand a {
+    /* 使用oklch颜色空间，根据--i变量生成不同的颜色 */
+    --clr: oklch(70% 50% calc(var(--hue) + var(--i) * 60));
+    
+    /* 设置图标布局 */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-basis: 6rem; /* 设置每个图标的基础宽度为4.5rem */
+    aspect-ratio: 1/1; /* 保持正方形比例 */
+    
+    /* 基础样式设置 */
+    text-decoration: none;
+    font-size: 2rem;
+    color: var(--clr);
+    border: 0.1rem solid var(--clr);
+    border-radius: 1rem;
+    
+    /* 设置渐变背景，实现百叶窗效果 */
+    background: linear-gradient(-135deg, transparent var(--fill), var(--clr) var(--fill));
+    outline: 1px solid transparent;
+    outline-offset: -8px;
+    background-size: 100% 33.33%;
+    
+    /* 设置过渡动画 */
+    transition: 0.4s ease-in-out 0.4s;
+    transition-property: --fill, all;
+}
+
+/* 鼠标悬停和焦点状态的样式 */
+a:hover,
+a:focus-visible {
+    --fill: 0%; /* 改变填充比例，触发动画效果 */
+    color: #07071d;
+    outline-color: currentColor;
+    background-image: linear-gradient(transparent var(--fill), var(--clr)var(--fill));
+    transition-delay: 0s; /* 移除过渡延迟 */
+}
