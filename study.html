@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>学习计划表</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            background-color: #f5f5f5;
+        }
+
+        h1 {
+            text-align: center;
+            margin: 10px 0;
+            flex-shrink: 0;
+        }
+
+        .schedule-card {
+            flex: 1;
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto 10px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        table {
+            width: 100%;
+            height: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+
+        th, td {
+            border: 1px solid #e0e0e0;
+            padding: 8px;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        th {
+            background-color: #fafafa;
+            font-weight: bold;
+        }
+
+        .subject {
+            width: 50px;
+        }
+
+        .task {
+            width: 160px;
+        }
+
+        .date {
+            width: 45px;
+            text-align: center;
+        }
+
+        .checkbox {
+            width: 16px;
+            height: 16px;
+            margin: 0 auto;
+            display: block;
+            cursor: pointer;
+            border: 1px solid #666;
+        }
+
+        /* 保存复选框状态的样式 */
+        .checkbox:checked {
+            accent-color: #4CAF50;
+        }
+
+        /* 打印样式 */
+        @media print {
+            /* 隐藏所有不需要打印的元素 */
+            body * {
+                visibility: hidden;
+            }
+
+            /* 只显示要打印的表格内容 */
+            .schedule-card.print,
+            .schedule-card.print * {
+                visibility: visible;
+            }
+
+            /* 重置body样式 */
+            body {
+                padding: 0;
+                margin: 0;
+                background-color: white;
+                height: auto;
+                display: block;
+            }
+
+            /* 表格容器样式 */
+            .schedule-card.print {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                box-shadow: none;
+                border: none;
+                padding: 0;
+                margin: 0;
+                border-radius: 0;
+                background: none;
+            }
+
+            /* 表格样式 */
+            table {
+                width: 100%;
+                page-break-inside: avoid;
+                font-size: 10px;
+                border-collapse: collapse;
+            }
+
+            th, td {
+                border: 1px solid #000;
+                padding: 4px;
+                text-align: left;
+            }
+
+            th {
+                font-weight: bold;
+                background-color: #f0f0f0 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            /* 设置打印页面 */
+            @page {
+                size: A4 landscape;
+                margin: 5mm;
+            }
+
+            /* 列宽度设置 */
+            .subject {
+                width: 40px;
+            }
+
+            .task {
+                width: 140px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .date {
+                width: 35px;
+                text-align: center;
+            }
+
+            /* 复选框样式 */
+            .checkbox {
+                width: 8px;
+                height: 8px;
+                margin: 0 auto;
+            }
+
+            .checkbox:checked:after {
+                font-size: 8px;
+            }
+
+            /* 修改表格行高 */
+            tr {
+                height: 30px !important; /* 增加打印时的行高 */
+            }
+
+            /* 修改打印时的复选框样式 */
+            .checkbox {
+                width: 14px !important;
+                height: 14px !important;
+                margin: 2px auto;
+                border: 1px solid #000;
+                position: relative;
+                -webkit-appearance: none;
+                appearance: none;
+                background-color: white;
+            }
+
+            /* 自定义复选框选中状态 */
+            .checkbox:checked {
+                background-color: white;
+            }
+
+            .checkbox:checked:after {
+                content: '✓';
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                font-size: 12px;
+                color: #000;
+                font-weight: bold;
+            }
+
+            /* 调整单元格内边距 */
+            th, td {
+                padding: 8px;
+                vertical-align: middle;
+                height: 30px !important;
+            }
+        }
+
+        /* 添加 Tab 按钮样式 */
+        .tab-buttons {
+            text-align: center;
+            margin: 10px 0;
+            flex-shrink: 0;
+        }
+        
+        .tab-button {
+            padding: 8px 16px;
+            margin: 0 5px;
+            border: none;
+            border-radius: 4px;
+            background-color: #f0f0f0;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .tab-button.active {
+            background-color: #4CAF50;
+            color: white;
+        }
+        
+        #saveButton {
+            padding: 8px 16px;
+            margin-left: 10px;
+            border: none;
+            border-radius: 4px;
+            background-color: #2196F3;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        #saveButton:hover {
+            background-color: #1976D2;
+        }
+        
+        .tab-button:hover {
+            background-color: #e0e0e0;
+        }
+
+        /* 添加响应式布局 */
+        @media screen and (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            .schedule-card {
+                padding: 10px;
+            }
+            
+            .task {
+                width: 160px;
+            }
+            
+            th, td {
+                padding: 8px;
+                font-size: 14px;
+            }
+        }
+
+        /* 添加提示框样式 */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 4px;
+            display: none;
+            animation: fadeInOut 2s ease-in-out;
+        }
+        
+        @keyframes fadeInOut {
+            0% { opacity: 0; }
+            20% { opacity: 1; }
+            80% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+
+        .table-container {
+            flex: 1;
+        }
+
+        /* 移除所有滚动条相关样式 */
+        .table-container::-webkit-scrollbar,
+        .table-container::-webkit-scrollbar-track,
+        .table-container::-webkit-scrollbar-thumb,
+        .table-container::-webkit-scrollbar-thumb:hover {
+            display: none;
+        }
+
+        #printButton {
+            padding: 8px 16px;
+            margin-left: 10px;
+            border: none;
+            border-radius: 4px;
+            background-color: #607D8B;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        #printButton:hover {
+            background-color: #455A64;
+        }
+
+        /* 修改表格行高 */
+        tr {
+            height: 40px; /* 增加普通状态的行高 */
+        }
+
+        /* 调整普通状态下的单元格内边距 */
+        th, td {
+            padding: 10px;
+            vertical-align: middle;
+            height: 40px;
+        }
+    </style>
+</head>
+<body>
+    <h1>学习计划表</h1>
+    
+    <div class="schedule-card" id="tabContent1">
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="subject">科目</th>
+                        <th class="task">任务内容</th>
+                        <th class="date">1/19</th>
+                        <th class="date">1/20</th>
+                        <th class="date">1/21</th>
+                        <th class="date">1/22</th>
+                        <th class="date">1/23</th>
+                        <th class="date">1/24</th>
+                        <th class="date">1/25</th>
+                        <th class="date">1/26</th>
+                        <th class="date">1/27</th>
+                        <th class="date">1/28</th>
+                        <th class="date">1/29</th>
+                        <th class="date">1/30</th>
+                        <th class="date">1/31</th>
+                    </tr>
+                </thead>
+                <tbody id="scheduleBody1">
+                    <!-- 表格内容将通过JavaScript动态生成 -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="schedule-card" id="tabContent2" style="display: none;">
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="subject">科目</th>
+                        <th class="task">任务内容</th>
+                        <th class="date">2/1</th>
+                        <th class="date">2/2</th>
+                        <th class="date">2/3</th>
+                        <th class="date">2/4</th>
+                        <th class="date">2/5</th>
+                        <th class="date">2/6</th>
+                        <th class="date">2/7</th>
+                        <th class="date">2/8</th>
+                        <th class="date">2/9</th>
+                        <th class="date">2/10</th>
+                        <th class="date">2/11</th>
+                        <th class="date">2/12</th>
+                        <th class="date">2/13</th>
+                    </tr>
+                </thead>
+                <tbody id="scheduleBody2">
+                    <!-- 表格内容将通过JavaScript动态生成 -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="tab-buttons">
+        <button id="tab1" class="tab-button active" onclick="showTab(1)">一月</button>
+        <button id="tab2" class="tab-button" onclick="showTab(2)">二月</button>
+        <button id="saveButton" onclick="saveAllCheckboxStates()">保存进度</button>
+        <button id="printButton" onclick="printTable()">打印表格</button>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script>
+        const subjects = {
+            "语文": [
+                "1. 背诵并默写六下必背内容",
+                "2. 每日读书1小时+",
+                "3. 每周一篇作文仿写",
+                "4. 每日一篇阅读理解",
+                "5. 摘抄精美句子并仿写",
+                "6. 练字帖一张",
+                "学有余力：读《古文观止》"
+            ],
+            "英语": [
+                "1. 复习六上单词，背诵六下单词",
+                "2. 每日背诵5个单词",
+                "3. 听课文并背诵lets talk",
+                "4. 每日一篇阅读理解+听力",
+                "5. 每周看英文电影1-2本"
+            ],
+            "数学": [
+                "1. 每日一页口算",
+                "2. 易错题练习",
+                "3. 计算天天练"
+            ]
+        };
+
+        // 生成日期数组（1月20日到1月31日）
+        const dates1 = Array.from({length: 13}, (_, i) => {
+            const date = new Date(2025, 0, 19 + i);
+            return `${date.getMonth() + 1}/${date.getDate()}`;
+        });
+
+        // 生成日期数组（2月1日到2月12日）
+        const dates2 = Array.from({length: 13}, (_, i) => {
+            const date = new Date(2025, 1, 1 + i);
+            return `${date.getMonth() + 1}/${date.getDate()}`;
+        });
+
+        // 修改生成表格内容函数
+        function generateTable(tab) {
+            const tbody = document.getElementById(`scheduleBody${tab}`);
+            let html = '';
+
+            const tasks = subjects;
+
+            for (const [subject, taskList] of Object.entries(tasks)) {
+                taskList.forEach((task, index) => {
+                    html += '<tr>';
+                    if (index === 0) {
+                        html += `<td rowspan="${taskList.length}" class="subject">${subject}</td>`;
+                    }
+                    html += `<td class="task">${task}</td>`;
+                    // 添加日期列的复选框
+                    const dates = tab === 1 ? dates1 : dates2;
+                    dates.forEach((date, dateIndex) => {
+                        // 修改 checkboxId 的格式，加入 tab 标识以区分不同表格
+                        const checkboxId = `tab${tab}-${subject}-${index}-${date}`;
+                        const isChecked = localStorage.getItem(checkboxId) === 'true';
+                        html += `
+                            <td class="date">
+                                <input type="checkbox" 
+                                       class="checkbox" 
+                                       id="${checkboxId}"
+                                       onchange="saveCheckboxState('${checkboxId}')"
+                                       ${isChecked ? 'checked' : ''}>
+                            </td>`;
+                    });
+                    html += '</tr>';
+                });
+            }
+
+            tbody.innerHTML = html;
+        }
+
+        // 切换 tab
+        function showTab(tab) {
+            document.getElementById('tabContent1').style.display = tab === 1 ? 'block' : 'none';
+            document.getElementById('tabContent2').style.display = tab === 2 ? 'block' : 'none';
+            
+            // 更新按钮状态
+            document.getElementById('tab1').classList.toggle('active', tab === 1);
+            document.getElementById('tab2').classList.toggle('active', tab === 2);
+        }
+
+        // 修改保存单个复选框状态函数
+        function saveCheckboxState(checkboxId) {
+            const checkbox = document.getElementById(checkboxId);
+            if (checkbox) {
+                localStorage.setItem(checkboxId, checkbox.checked);
+            }
+        }
+
+        // 修改保存所有复选框状态函数
+        function saveAllCheckboxStates() {
+            // 获取所有显示中的表格的复选框
+            const activeTab = document.getElementById('tabContent1').style.display === 'block' ? 1 : 2;
+            const checkboxes = document.getElementById(`tabContent${activeTab}`).querySelectorAll('.checkbox');
+            
+            checkboxes.forEach(checkbox => {
+                localStorage.setItem(checkbox.id, checkbox.checked);
+            });
+            
+            showToast("进度保存成功！");
+        }
+
+        // 修改加载复选框状态函数
+        function loadCheckboxStates() {
+            // 加载两个表格的所有复选框状态
+            [1, 2].forEach(tab => {
+                const checkboxes = document.getElementById(`tabContent${tab}`).querySelectorAll('.checkbox');
+                checkboxes.forEach(checkbox => {
+                    const saved = localStorage.getItem(checkbox.id);
+                    if (saved !== null) {
+                        checkbox.checked = saved === 'true';
+                    }
+                });
+            });
+        }
+
+        // 优化保存提示函数
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.style.display = 'block';
+            
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 2000);
+        }
+
+        // 初始化
+        function initialize() {
+            // 先生成表格
+            generateTable(1);
+            generateTable(2);
+            // 再加载保存的状态
+            loadCheckboxStates();
+            // 显示第一个标签页
+            showTab(1);
+        }
+
+        // 调用初始化函数
+        initialize();
+
+        // 修改打印函数
+        function printTable() {
+            // 获取当前显示的表格
+            const activeTab = document.getElementById('tabContent1').style.display === 'block' ? 1 : 2;
+            const activeTable = document.getElementById(`tabContent${activeTab}`);
+            
+            // 添加打印类
+            activeTable.classList.add('print');
+            
+            // 调用打印
+            window.print();
+            
+            // 移除打印类
+            activeTable.classList.remove('print');
+        }
+    </script>
+</body>
+</html>
