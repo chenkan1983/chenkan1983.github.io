@@ -263,23 +263,113 @@
             background-color: #e0e0e0;
         }
 
-        /* 添加响应式布局 */
+        /* 修改响应式布局相关样式 */
         @media screen and (max-width: 768px) {
             body {
-                padding: 10px;
+                padding: 5px;
+                overflow-x: auto; /* 允许横向滚动 */
+            }
+            
+            h1 {
+                font-size: 20px;
+                margin: 5px 0;
             }
             
             .schedule-card {
-                padding: 10px;
+                padding: 8px;
+                margin: 0 auto 5px;
             }
             
             .task {
-                width: 160px;
+                width: 120px; /* 减小任务列宽度 */
+            }
+            
+            .subject {
+                width: 40px; /* 减小科目列宽度 */
+            }
+            
+            .date {
+                width: 35px; /* 减小日期列宽度 */
             }
             
             th, td {
-                padding: 8px;
-                font-size: 14px;
+                padding: 4px;
+                font-size: 12px; /* 减小字体大小 */
+            }
+            
+            .checkbox {
+                width: 14px;
+                height: 14px;
+            }
+            
+            /* Tab按钮样式调整 */
+            .tab-buttons {
+                margin: 5px 0;
+            }
+            
+            .tab-button, #saveButton, #printButton {
+                padding: 6px 12px;
+                font-size: 12px;
+                margin: 0 2px;
+            }
+            
+            /* 调整表格行高 */
+            tr {
+                height: 32px;
+            }
+        }
+
+        /* 添加平板设备的响应式样式 */
+        @media screen and (min-width: 769px) and (max-width: 1024px) {
+            .schedule-card {
+                padding: 12px;
+            }
+            
+            .task {
+                width: 140px;
+            }
+            
+            th, td {
+                padding: 6px;
+                font-size: 13px;
+            }
+        }
+
+        /* 优化表格滚动体验 */
+        .table-container {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch; /* 提升iOS滚动体验 */
+            scrollbar-width: thin;
+            position: relative;
+        }
+
+        /* 添加表格横向滚动提示 */
+        @media screen and (max-width: 768px) {
+            .table-container::after {
+                content: '';
+                position: absolute;
+                top: 0;
+                right: 0;
+                bottom: 0;
+                width: 20px;
+                background: linear-gradient(to right, transparent, rgba(0,0,0,0.1));
+                pointer-events: none;
+                opacity: 0;
+                transition: opacity 0.3s;
+            }
+            
+            .table-container:hover::after {
+                opacity: 1;
+            }
+        }
+
+        /* 优化toast提示在移动端的显示 */
+        @media screen and (max-width: 768px) {
+            .toast {
+                font-size: 12px;
+                padding: 8px 16px;
+                max-width: 90%;
+                text-align: center;
             }
         }
 
