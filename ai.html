@@ -321,6 +321,8 @@
             display: block;
         }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/@babel/polyfill/dist/polyfill.min.js"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
 <body>
     <!-- 添加遮罩和加载动画 -->
@@ -357,6 +359,20 @@
 
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script>
+        MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            options: {
+                renderActions: {
+                    findScript: [10, function (doc) {
+                        // 这里可以添加自定义的处理逻辑
+                    }, '']
+                }
+            }
+        };
+
         const fileInput = document.getElementById('fileInput');
         const imagePreview = document.getElementById('imagePreview');
         const loading = document.querySelector('.loading');
@@ -441,6 +457,11 @@
             sanitize: false // 允许 HTML 标签
         });
 
+        // 在处理结果后，调用 MathJax 渲染公式
+        function renderMath() {
+            MathJax.typeset();
+        }
+
         // 更新按钮点击事件处理
         document.querySelectorAll('.action-btn').forEach(button => {
             button.addEventListener('click', async function() {
@@ -475,25 +496,47 @@
 
                     switch(action) {
                         case '解题':
-                            prompt = '请使用Markdown格式回答，帮我解答图片中的所有题目，并输出原题内容，详细说明解题步骤。';
+                            prompt = '帮我解答图片中的所有题目，并输出原题内容，详细说明解题步骤。如果题目中包含数学符号，请使用LaTeX格式输出。';
                             break;
                         case '识物':
-                            prompt = '请使用Markdown格式回答，详细描述这张图片中的物体是什么。';
+                            prompt = '详细描述这张图片中的物体是什么。';
                             break;
                         case '翻译':
-                            prompt = '请使用Markdown格式回答，帮我翻译图片中的文字内容，如果图片中的文字是中文，则翻译成英文，如果是其他国家的文字，则翻译成中文';
+                            prompt = '帮我翻译图片中的文字内容，如果图片中的文字是中文，则翻译成英文，如果是其他国家的文字，则翻译成中文';
                             break;
                         case '描述':
-                            prompt = '请使用Markdown格式回答，详细描述这张图片的内容。';
+                            prompt = '详细描述这张图片的内容。如果图片中包含数学符号，请使用LaTeX格式输出。';
                             break;
                     }
 
                     const result = await callGLM4V(base64Image, prompt);
                     console.log('API返回结果:', result);
+
+                    // 提取数学符号内容
+                    const mathContent = result.match(/\$.*?\$/g) || []; // 匹配所有数学符号内容
+                    const hasMathSymbols = mathContent.length > 0; // 检查是否有数学符号
+
+                    // 根据条件决定是否进行Markdown转化
+                    if (action === '解题') {
+                        // 如果是解题且有数学符号，直接显示结果
+                        resultContainer.innerHTML = result; // 不进行Markdown转化
+                    } else {
+                        const markdownContent = result.replace(/\$.*?\$/g, ''); // 移除数学符号内容
+                        resultContainer.innerHTML = marked.parse(markdownContent); // 进行Markdown转化
+                    }
                     
-                    resultContainer.innerHTML = marked.parse(result);
                     resultContainer.classList.add('markdown-body');
                     resultContainer.style.display = 'block';
+
+                    // 渲染数学公式
+                    renderMath();
+
+                    // 替换数学符号内容
+                    mathContent.forEach(math => {
+                        const mathElement = document.createElement('span');
+                        mathElement.innerHTML = math; // 将数学符号内容插入
+                        resultContainer.appendChild(mathElement);
+                    });
                 } catch (error) {
                     console.error('处理失败:', error);
                     alert('处理失败，请重试！');
@@ -526,9 +569,31 @@
                 const result = await callGLM4V(base64Image, prompt);
                 console.log('API返回结果:', result);
                 
-                resultContainer.innerHTML = marked.parse(result);
+                // 提取数学符号内容
+                const mathContent = result.match(/\$.*?\$/g) || []; // 匹配所有数学符号内容
+                const hasMathSymbols = mathContent.length > 0; // 检查是否有数学符号
+
+                // 根据条件决定是否进行Markdown转化
+                if (hasMathSymbols) {
+                    // 如果包含数学符号，直接显示结果
+                    resultContainer.innerHTML = result; // 不进行Markdown转化
+                } else {
+                    const markdownContent = result.replace(/\$.*?\$/g, ''); // 移除数学符号内容
+                    resultContainer.innerHTML = marked.parse(markdownContent); // 进行Markdown转化
+                }
+                
                 resultContainer.classList.add('markdown-body');
                 resultContainer.style.display = 'block';
+
+                // 渲染数学公式
+                renderMath();
+
+                // 替换数学符号内容
+                mathContent.forEach(math => {
+                    const mathElement = document.createElement('span');
+                    mathElement.innerHTML = math; // 将数学符号内容插入
+                    resultContainer.appendChild(mathElement);
+                });
             } catch (error) {
                 console.error('处理失败:', error);
                 alert('处理失败，请重试！');
