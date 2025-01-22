@@ -18,12 +18,20 @@
 
         .container {
             width: 100%;
-            max-width: 800px;
+            /* max-width: 800px; */
             margin: 0 auto;
             padding: 16px;
             text-align: center;
+            overflow: hidden;
         }
-        
+        .upload-container {
+            display: flex;
+            width: 100vw;
+            height: 100vh;
+            justify-content: center;
+            align-items: center;
+            
+        }
         .upload-btn {
             display: inline-block;
             padding: 12px 24px;
@@ -31,7 +39,7 @@
             color: white;
             border-radius: 8px;
             cursor: pointer;
-            margin: 16px 0;
+            margin: auto; /* 修改为自动边距以实现居中 */
             font-size: 16px;
             transition: all 0.3s ease;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
@@ -49,6 +57,14 @@
             border-radius: 12px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             margin-top: 16px;
+            display: none;
+            position: fixed;
+            top: 16px;
+            left: 0;
+            width: 100%; /* 确保宽度为100% */
+            max-height: 100vh; /* 设置最大高度 */
+            overflow-y: auto; /* 允许垂直滚动 */
+            z-index: 100;
         }
 
         /* 添加图片容器样式 */
@@ -313,9 +329,11 @@
     </div>
 
     <div class="container">
-        <label for="fileInput" class="upload-btn">
-            选择图片
-        </label>
+        <div class="upload-container">
+            <label for="fileInput" class="upload-btn">
+                选择图片
+            </label>
+        </div>
         <input type="file" id="fileInput" accept="image/*">
         <div class="preview-container">
             <div class="loading">正在加载图片...</div>
@@ -536,9 +554,12 @@
                 reader.onload = function(e) {
                     hideLoading();
                     imagePreview.style.display = 'block';
+                    // 设置图片预览的源
                     imagePreview.src = e.target.result;
                     actionButtons.style.display = 'grid';
                     resultContainer.style.display = 'none';
+                    // 显示预览容器
+                    document.querySelector('.preview-container').style.display = 'block';
                     // 隐藏选择图片按钮
                     document.querySelector('.upload-btn').style.display = 'none';
                 };
