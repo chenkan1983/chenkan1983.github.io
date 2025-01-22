@@ -62,10 +62,11 @@
 
         .action-buttons {
             display: none;
-            flex-direction: column;
+            grid-template-columns: 1fr 1fr;
             gap: 12px;
             margin-top: 16px;
             width: 100%;
+            margin-bottom: 16px;
         }
 
         .action-btn {
@@ -73,7 +74,6 @@
             padding: 12px;
             border: none;
             border-radius: 8px;
-            background-color: #2196F3;
             color: white;
             font-size: 16px;
             cursor: pointer;
@@ -102,6 +102,9 @@
         .action-btn.describe {
             background-color: #E91E63;
         }
+        .action-btn.custom {
+            background-color: #2196F3;
+        }
 
         #imagePreview {
             max-width: 100%;
@@ -109,6 +112,7 @@
             display: none;
             border-radius: 8px;
             object-fit: contain;
+            cursor: pointer;
         }
         
         #fileInput {
@@ -186,6 +190,120 @@
                 gap: 8px;
             }
         }
+
+        /* Markdown 内容样式 */
+        .markdown-body {
+            color: #24292e;
+        }
+
+        .markdown-body h1,
+        .markdown-body h2,
+        .markdown-body h3,
+        .markdown-body h4 {
+            margin-top: 24px;
+            margin-bottom: 16px;
+            font-weight: 600;
+            line-height: 1.25;
+        }
+
+        .markdown-body h1 { font-size: 2em; }
+        .markdown-body h2 { font-size: 1.5em; }
+        .markdown-body h3 { font-size: 1.25em; }
+        .markdown-body h4 { font-size: 1em; }
+
+        .markdown-body p {
+            margin-bottom: 16px;
+        }
+
+        .markdown-body code {
+            padding: 0.2em 0.4em;
+            margin: 0;
+            font-size: 85%;
+            background-color: rgba(27,31,35,0.05);
+            border-radius: 3px;
+            font-family: SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace;
+        }
+
+        .markdown-body pre {
+            padding: 16px;
+            overflow: auto;
+            font-size: 85%;
+            line-height: 1.45;
+            background-color: #f6f8fa;
+            border-radius: 3px;
+            margin-bottom: 16px;
+        }
+
+        .markdown-body pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+
+        .markdown-body blockquote {
+            padding: 0 1em;
+            color: #6a737d;
+            border-left: 0.25em solid #dfe2e5;
+            margin-bottom: 16px;
+        }
+
+        .markdown-body ul,
+        .markdown-body ol {
+            padding-left: 2em;
+            margin-bottom: 16px;
+        }
+
+        .markdown-body hr {
+            height: 0.25em;
+            padding: 0;
+            margin: 24px 0;
+            background-color: #e1e4e8;
+            border: 0;
+        }
+
+        /* 修改自定义输入框样式 */
+        .custom-prompt {
+            display: none;  /* 改回 none，默认隐藏 */
+            width: 100%;
+            background-color: #f8f9fa;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+            margin-top: 16px;
+        }
+
+        .custom-prompt textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            line-height: 1.5;
+            resize: vertical;
+            min-height: 80px;
+            margin-bottom: 8px;
+            background-color: white;
+        }
+
+        .custom-prompt button {
+            width: 100%;
+            padding: 12px;
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .custom-prompt button:hover {
+            background-color: #1976D2;
+            transform: translateY(-1px);
+        }
+
+        .custom-prompt.show {
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -209,11 +327,17 @@
                 <button class="action-btn identify">识物</button>
                 <button class="action-btn translate">翻译</button>
                 <button class="action-btn describe">描述</button>
+                <button class="action-btn custom">自定义</button>
+            </div>
+            <div class="custom-prompt">
+                <textarea placeholder="请输入自定义提示语..."></textarea>
+                <button class="custom-submit">发送</button>
             </div>
             <div class="result-container"></div>
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script>
         const fileInput = document.getElementById('fileInput');
         const imagePreview = document.getElementById('imagePreview');
@@ -221,6 +345,8 @@
         const actionButtons = document.querySelector('.action-buttons');
         const resultContainer = document.querySelector('.result-container');
         const overlay = document.querySelector('.overlay');
+        const customPrompt = document.querySelector('.custom-prompt');
+        const customSubmit = document.querySelector('.custom-submit');
 
         // 添加API配置
         const API_KEY = '8f60f0afcc894298a2ecc6ad75a4865f.BjULWUBcMIjFuFu8';
@@ -290,12 +416,35 @@
             overlay.style.display = 'none';
         }
 
+        // 配置 marked 选项
+        marked.setOptions({
+            breaks: true,  // 支持 GitHub 风格的换行
+            gfm: true,    // 启用 GitHub 风格的 Markdown
+            sanitize: false // 允许 HTML 标签
+        });
+
         // 更新按钮点击事件处理
         document.querySelectorAll('.action-btn').forEach(button => {
             button.addEventListener('click', async function() {
                 const action = this.textContent;
-                const file = fileInput.files[0];
                 
+                // 处理自定义按钮的点击
+                if (action === '自定义' || action === '取消自定义') {
+                    if (action === '自定义') {
+                        this.textContent = '取消自定义';
+                        customPrompt.style.display = 'block';
+                    } else {
+                        this.textContent = '自定义';
+                        customPrompt.style.display = 'none';
+                    }
+                    return;
+                }
+
+                // 点击其他按钮时，重置自定义按钮状态
+                document.querySelector('.action-btn.custom').textContent = '自定义';
+                customPrompt.style.display = 'none';
+
+                const file = fileInput.files[0];
                 if (!file) {
                     alert('请先选择图片！');
                     return;
@@ -308,24 +457,24 @@
 
                     switch(action) {
                         case '解题':
-                            prompt = '请帮我解答图片中的所有题目，并输出原题内容，详细说明解题步骤。';
+                            prompt = '请使用Markdown格式回答，帮我解答图片中的所有题目，并输出原题内容，详细说明解题步骤。';
                             break;
                         case '识物':
-                            prompt = '请详细描述这张图片中的物体是什么。';
+                            prompt = '请使用Markdown格式回答，详细描述这张图片中的物体是什么。';
                             break;
                         case '翻译':
-                            prompt = '请帮我翻译图片中的文字内容，如果图片中的文字是中文，则翻译成英文，如果是其他国家的文字，则翻译成中文';
+                            prompt = '请使用Markdown格式回答，帮我翻译图片中的文字内容，如果图片中的文字是中文，则翻译成英文，如果是其他国家的文字，则翻译成中文';
                             break;
                         case '描述':
-                            prompt = '请详细描述这张图片的内容。';
+                            prompt = '请使用Markdown格式回答，详细描述这张图片的内容。';
                             break;
                     }
 
                     const result = await callGLM4V(base64Image, prompt);
-                    // 在控制台打印结果
                     console.log('API返回结果:', result);
-                    // 在页面显示结果
-                    resultContainer.textContent = result;
+                    
+                    resultContainer.innerHTML = marked.parse(result);
+                    resultContainer.classList.add('markdown-body');
                     resultContainer.style.display = 'block';
                 } catch (error) {
                     console.error('处理失败:', error);
@@ -335,6 +484,40 @@
                     hideLoading();
                 }
             });
+        });
+
+        // 添加自定义提交按钮的点击事件
+        customSubmit.addEventListener('click', async function() {
+            const file = fileInput.files[0];
+            if (!file) {
+                alert('请先选择图片！');
+                return;
+            }
+
+            const customPromptText = document.querySelector('.custom-prompt textarea').value.trim();
+            if (!customPromptText) {
+                alert('请输入提示语！');
+                return;
+            }
+
+            try {
+                showLoading();
+                const base64Image = await getBase64(file);
+                const prompt = '请使用Markdown格式回答：' + customPromptText;
+
+                const result = await callGLM4V(base64Image, prompt);
+                console.log('API返回结果:', result);
+                
+                resultContainer.innerHTML = marked.parse(result);
+                resultContainer.classList.add('markdown-body');
+                resultContainer.style.display = 'block';
+            } catch (error) {
+                console.error('处理失败:', error);
+                alert('处理失败，请重试！');
+                resultContainer.style.display = 'none';
+            } finally {
+                hideLoading();
+            }
         });
 
         fileInput.addEventListener('change', function(e) {
@@ -354,8 +537,10 @@
                     hideLoading();
                     imagePreview.style.display = 'block';
                     imagePreview.src = e.target.result;
-                    actionButtons.style.display = 'flex';
+                    actionButtons.style.display = 'grid';
                     resultContainer.style.display = 'none';
+                    // 隐藏选择图片按钮
+                    document.querySelector('.upload-btn').style.display = 'none';
                 };
                 
                 reader.onerror = function() {
@@ -366,6 +551,12 @@
 
                 reader.readAsDataURL(file);
             }
+            customPrompt.classList.remove('show');
+        });
+
+        // 添加图片点击事件
+        imagePreview.addEventListener('click', function() {
+            fileInput.click();
         });
     </script>
 </body>
