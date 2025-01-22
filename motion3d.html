@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Cube Animation</title>
+    <!-- 引入 Motion 库 -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/motion@latest/dist/motion.js"></script> -->
+</head>
+
+<body>
+    <div class="container">
+        <div id="three-container"></div>
+        <div class="box"></div>
+        <div class="box2"></div>
+        <ul class="example">
+            <li></li>
+            <li></li>
+            <li></li>
+            <li></li>
+        </ul>
+        <pre id="count">0</pre>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/motion@latest/dist/motion.js"></script>
+    <script type="module">
+        import * as THREE from "https://cdn.jsdelivr.net/npm/three@v0.149.0/build/three.module.js"
+
+        const { animate, frame, stagger, hover } = Motion
+
+        var scene = new THREE.Scene({ alpha: true })
+        const main = document.getElementById("three-container")
+        var camera = new THREE.PerspectiveCamera(
+            25,
+            main.offsetWidth / main.offsetHeight,
+            0.1,
+            1000
+        )
+        var renderer = new THREE.WebGLRenderer({ antialias: true })
+        renderer.setSize(main.offsetWidth, main.offsetHeight)
+        main.appendChild(renderer.domElement)
+
+        var geometry = new THREE.BoxGeometry()
+        var material = new THREE.MeshPhongMaterial({ color: 0x4ff0b7 })
+        var cube = new THREE.Mesh(geometry, material)
+        renderer.setClearColor(0xffffff, 0)
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5)
+        directionalLight.position.set(2, 2, 2)
+        const light = new THREE.AmbientLight(0x404040) // soft white light
+        scene.add(light)
+        scene.add(directionalLight)
+        scene.add(cube)
+
+        camera.position.z = 5
+
+        function rad(degrees) {
+            return degrees * (Math.PI / 180)
+        }
+
+        /**
+         * Create Three.js render loop using Motion's frameloop
+         */
+        frame.render(() => renderer.render(scene, camera), true)
+
+        /**
+         * Animate cube rotation
+         */
+        const cubeAnimate = animate(
+            cube.rotation,
+            { y: rad(360), z: rad(360) },
+            { duration: 10, repeat: Infinity, ease: "linear" }
+        )
+
+        // hover(".box", (element) => {
+        //     animate(element, { scale: 1.3 }, { type: "spring" })
+
+        //     return () => animate(element, { scale: 1 }, { type: "spring" })
+        // })
+        animate(".box", { scale: [0.4, 1] }, { ease: "circInOut", duration: 1, repeat: Infinity })
+        animate(
+            ".box2",
+            { rotate: 90 },
+            { type: "spring", repeat: Infinity, repeatDelay: 0.2 }
+        )
+        const count = document.getElementById("count")
+
+        animate(0, 100, {
+            duration: 10,
+            repeat: Infinity,
+            ease: "linear",
+            onUpdate: (latest) => (count.innerHTML = Math.round(latest)),
+        })
+
+        animate(".example li", { opacity: 1, y: [50, 0] }, { delay: stagger(0.05), duration: 0.5, ease: "easeInOut", repeat: Infinity })
+    </script>
+
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f0f0f0;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        div {
+            margin-bottom: 30px;
+        }
+
+        #three-container {
+            width: 300px;
+            height: 200px;
+        }
+
+        .box {
+            width: 100px;
+            height: 100px;
+            background-color: #4ff0b7;
+            border-radius: 10px;
+            transform: scale(0.4);
+        }
+
+        .box2 {
+            width: 100px;
+            height: 100px;
+            background-color: #ff0088;
+            border-radius: 10px;
+        }
+
+        ul.example {
+            list-style: none;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex: 0;
+            margin: 0;
+            padding: 0;
+        }
+
+        ul.example li {
+            width: 50px;
+            height: 50px;
+            border-radius: 10px;
+            display: block;
+            background-color: #0cdcf7;
+            opacity: 0;
+            flex: 0 0 50px;
+        }
+
+        #count {
+            font-size: 64px;
+            color: #4ff0b7;
+        }
+    </style>
+</body>
+
+</html>

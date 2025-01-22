@@ -23,6 +23,9 @@
             flex-direction: column;
             padding: 10px;
             background-color: #f5f5f5;
+            min-height: 100%;
+            overflow-y: auto; /* 允许垂直滚动 */
+            position: relative;
         }
 
         h1 {
@@ -265,19 +268,49 @@
 
         /* 修改响应式布局相关样式 */
         @media screen and (max-width: 768px) {
-            body {
-                padding: 5px;
-                overflow-x: auto; /* 允许横向滚动 */
+            html, body {
+                height: auto; /* 移除固定高度 */
+                overflow: auto; /* 允许滚动 */
+                min-height: 100%;
             }
             
-            h1 {
-                font-size: 20px;
-                margin: 5px 0;
+            body {
+                padding: 5px;
             }
             
             .schedule-card {
                 padding: 8px;
                 margin: 0 auto 5px;
+                flex: none; /* 移除 flex: 1 以避免拉伸 */
+                height: auto; /* 自适应高度 */
+            }
+            
+            .table-container {
+                overflow-x: auto;
+                overflow-y: visible;
+                height: auto; /* 自适应高度 */
+            }
+            
+            /* 确保底部按钮始终可见 */
+            .tab-buttons {
+                position: sticky;
+                bottom: 0;
+                background-color: #f5f5f5;
+                padding: 8px 0;
+                margin: 0;
+                width: 100%;
+                z-index: 100;
+                box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+            }
+            
+            /* 调整表格容器的下边距，为底部按钮留出空间 */
+            .schedule-card:last-of-type {
+                margin-bottom: 60px;
+            }
+            
+            h1 {
+                font-size: 20px;
+                margin: 5px 0;
             }
             
             .task {
@@ -338,9 +371,10 @@
         /* 优化表格滚动体验 */
         .table-container {
             overflow-x: auto;
-            -webkit-overflow-scrolling: touch; /* 提升iOS滚动体验 */
+            -webkit-overflow-scrolling: touch;
             scrollbar-width: thin;
             position: relative;
+            height: auto; /* 自适应高度 */
         }
 
         /* 添加表格横向滚动提示 */
