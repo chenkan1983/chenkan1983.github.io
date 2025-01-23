@@ -264,6 +264,23 @@
         const newsContainer = document.getElementById('newsContainer');
         let isPlaying = false;
 
+        // 页面加载时检查音乐播放状态
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedState = localStorage.getItem('musicPlaying');
+            if (savedState === 'true') {
+                music.play().catch(function(error) {
+                    console.log("播放失败:", error);
+                });
+                isPlaying = true;
+                playButton.style.display = 'none';
+                banner.classList.add('show-mask');
+                // 这里可以添加动画显示导航栏的代码
+            }
+            initPlayButton();
+            initMenuToggle();
+            initNewsToggle();
+        });
+
         // 播放按钮点击事件
         function initPlayButton() {
             playButton.addEventListener('click', function () {
@@ -272,6 +289,7 @@
                         console.log("播放失败:", error);
                     });
                     isPlaying = true;
+                    localStorage.setItem('musicPlaying', 'true'); // 保存播放状态
                     playButton.style.display = 'none';
                     banner.classList.add('show-mask');
                     setTimeout(() => {
@@ -331,13 +349,6 @@
                 }
             });
         }
-
-        // 页面加载完成后初始化所有事件
-        document.addEventListener('DOMContentLoaded', function() {
-            initPlayButton();
-            initMenuToggle();
-            initNewsToggle();
-        });
 
         async function fetchData() {
             try {
