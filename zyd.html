@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>我的AI助手</title>
+    <title>报告查询</title>
     <style>
         * {
             box-sizing: border-box;
@@ -345,22 +345,10 @@
             </label>
         </div>
         <input type="file" id="fileInput" accept="image/*">
-        <div class="preview-container">
+        <div class="preview-container" style="display: none;">
             <div class="loading">正在加载图片...</div>
             <div class="image-container">
-                <img id="imagePreview" alt="图片预览">
-            </div>
-            <div class="action-buttons">
-                <button class="action-btn solve">解题</button>
-                <button class="action-btn identify">识物</button>
-                <button class="action-btn translate">翻译</button>
-                <button class="action-btn describe">描述</button>
-                <button class="action-btn read">识字</button>
-                <button class="action-btn custom">自定义</button>
-            </div>
-            <div class="custom-prompt">
-                <textarea placeholder="请输入自定义提示语..."></textarea>
-                <button class="custom-submit">发送</button>
+                <img id="imagePreview" alt="图片预览" style="display: none;">
             </div>
             <div class="result-container"></div>
         </div>
@@ -385,11 +373,8 @@
         const fileInput = document.getElementById('fileInput');
         const imagePreview = document.getElementById('imagePreview');
         const loading = document.querySelector('.loading');
-        const actionButtons = document.querySelector('.action-buttons');
         const resultContainer = document.querySelector('.result-container');
         const overlay = document.querySelector('.overlay');
-        const customPrompt = document.querySelector('.custom-prompt');
-        const customSubmit = document.querySelector('.custom-submit');
 
         // 添加API配置
         const API_KEY = '8f60f0afcc894298a2ecc6ad75a4865f.BjULWUBcMIjFuFu8';
@@ -472,149 +457,6 @@
         }
 
         // 更新按钮点击事件处理
-        document.querySelectorAll('.action-btn').forEach(button => {
-            button.addEventListener('click', async function() {
-                const action = this.textContent;
-                
-                // 处理自定义按钮的点击
-                if (action === '自定义' || action === '取消自定义') {
-                    if (action === '自定义') {
-                        this.textContent = '取消自定义';
-                        customPrompt.style.display = 'block';
-                    } else {
-                        this.textContent = '自定义';
-                        customPrompt.style.display = 'none';
-                    }
-                    return;
-                }
-
-                // 点击其他按钮时，重置自定义按钮状态
-                document.querySelector('.action-btn.custom').textContent = '自定义';
-                customPrompt.style.display = 'none';
-
-                const file = fileInput.files[0];
-                if (!file) {
-                    alert('请先选择图片！');
-                    return;
-                }
-
-                try {
-                    showLoading();
-                    const base64Image = await getBase64(file);
-                    let prompt = '';
-
-                    switch(action) {
-                        case '解题':
-                            prompt = '帮我解答图片中的所有题目，并输出原题内容，详细说明解题步骤。如果题目中包含数学符号，请使用LaTeX格式输出。';
-                            break;
-                        case '识物':
-                            prompt = '详细描述这张图片中的物体是什么。';
-                            break;
-                        case '翻译':
-                            prompt = '帮我翻译图片中的文字内容，如果图片中的文字是中文，则翻译成英文，如果是其他国家的文字，则翻译成中文';
-                            break;
-                        case '描述':
-                            prompt = '详细描述这张图片的内容。如果图片中包含数学符号，请使用LaTeX格式输出。';
-                            break;
-                        case '识字':
-                            prompt = '请识别图片中的文字，并用Markdown格式输出。';
-                            break;
-                    }
-
-                    const result = await callGLM4V(base64Image, prompt);
-                    console.log('API返回结果:', result);
-
-                    // 提取数学符号内容
-                    const mathContent = result.match(/\$.*?\$/g) || []; // 匹配所有数学符号内容
-                    const hasMathSymbols = mathContent.length > 0; // 检查是否有数学符号
-
-                    // 根据条件决定是否进行Markdown转化
-                    if (action === '解题') {
-                        // 如果是解题且有数学符号，直接显示结果
-                        resultContainer.innerHTML = result; // 不进行Markdown转化
-                    } else {
-                        const markdownContent = result.replace(/\$.*?\$/g, ''); // 移除数学符号内容
-                        resultContainer.innerHTML = marked.parse(markdownContent); // 进行Markdown转化
-                    }
-                    
-                    resultContainer.classList.add('markdown-body');
-                    resultContainer.style.display = 'block';
-
-                    // 渲染数学公式
-                    renderMath();
-
-                    // 替换数学符号内容
-                    mathContent.forEach(math => {
-                        const mathElement = document.createElement('span');
-                        mathElement.innerHTML = math; // 将数学符号内容插入
-                        resultContainer.appendChild(mathElement);
-                    });
-                } catch (error) {
-                    console.error('处理失败:', error);
-                    alert('处理失败，请重试！');
-                    resultContainer.style.display = 'none';
-                } finally {
-                    hideLoading();
-                }
-            });
-        });
-
-        // 添加自定义提交按钮的点击事件
-        customSubmit.addEventListener('click', async function() {
-            const file = fileInput.files[0];
-            if (!file) {
-                alert('请先选择图片！');
-                return;
-            }
-
-            const customPromptText = document.querySelector('.custom-prompt textarea').value.trim();
-            if (!customPromptText) {
-                alert('请输入提示语！');
-                return;
-            }
-
-            try {
-                showLoading();
-                const base64Image = await getBase64(file);
-                const prompt = '请使用Markdown格式回答：' + customPromptText;
-
-                const result = await callGLM4V(base64Image, prompt);
-                console.log('API返回结果:', result);
-                
-                // 提取数学符号内容
-                const mathContent = result.match(/\$.*?\$/g) || []; // 匹配所有数学符号内容
-                const hasMathSymbols = mathContent.length > 0; // 检查是否有数学符号
-
-                // 根据条件决定是否进行Markdown转化
-                if (hasMathSymbols) {
-                    // 如果包含数学符号，直接显示结果
-                    resultContainer.innerHTML = result; // 不进行Markdown转化
-                } else {
-                    const markdownContent = result.replace(/\$.*?\$/g, ''); // 移除数学符号内容
-                    resultContainer.innerHTML = marked.parse(markdownContent); // 进行Markdown转化
-                }
-                
-                resultContainer.classList.add('markdown-body');
-                resultContainer.style.display = 'block';
-
-                // 渲染数学公式
-                renderMath();
-
-                // 替换数学符号内容
-                mathContent.forEach(math => {
-                    const mathElement = document.createElement('span');
-                    mathElement.innerHTML = math; // 将数学符号内容插入
-                    resultContainer.appendChild(mathElement);
-                });
-            } catch (error) {
-                console.error('处理失败:', error);
-                alert('处理失败，请重试！');
-                resultContainer.style.display = 'none';
-            } finally {
-                hideLoading();
-            }
-        });
-
         fileInput.addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (file) {
@@ -624,32 +466,21 @@
                 }
 
                 showLoading();
-                imagePreview.style.display = 'none';
-                actionButtons.style.display = 'none';
-
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     hideLoading();
                     imagePreview.style.display = 'block';
-                    // 设置图片预览的源
                     imagePreview.src = e.target.result;
-                    actionButtons.style.display = 'grid';
-                    resultContainer.style.display = 'none';
-                    // 显示预览容器
                     document.querySelector('.preview-container').style.display = 'block';
-                    // 隐藏选择图片按钮
-                    document.querySelector('.upload-btn').style.display = 'none';
                 };
                 
                 reader.onerror = function() {
                     hideLoading();
-                    actionButtons.style.display = 'none';
                     alert('图片加载失败，请重试！');
                 };
 
                 reader.readAsDataURL(file);
             }
-            customPrompt.classList.remove('show');
         });
 
         // 添加图片点击事件
