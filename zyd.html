@@ -94,6 +94,7 @@
             font-size: 16px;
             cursor: pointer;
             transition: all 0.3s ease;
+            margin-bottom: 16px;
         }
 
         .action-btn:hover {
@@ -131,7 +132,7 @@
         }
 
         #imagePreview {
-            max-width: 100%;
+            max-width: 80%; /* 设置最大宽度为80% */
             height: auto;
             display: none;
             border-radius: 8px;
@@ -328,6 +329,37 @@
         .custom-prompt.show {
             display: block;
         }
+
+        .parse-report {
+            background-color: #FF9800; /* 设置为醒目的橙色 */
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            padding: 12px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .parse-report:hover {
+            background-color: #E68900; /* 悬停时变为深橙色 */
+        }
+
+        .parsed-report {
+            display: none;
+            max-height: 300px; /* 设置最大高度 */
+            overflow-y: auto; /* 启用垂直滚动 */
+            padding: 12px;
+            background-color: #f8f9fa; /* 背景颜色 */
+            border-radius: 8px; /* 圆角 */
+            border: 1px solid #dee2e6; /* 边框 */
+            text-align: left; /* 左对齐 */
+            margin-top: 16px; /* 上边距 */
+            font-family: monospace; /* 使用等宽字体 */
+            white-space: pre-wrap; /* 保留空格和换行 */
+            line-height: 1.5; /* 行高 */
+            color: #333; /* 字体颜色 */
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@babel/polyfill/dist/polyfill.min.js"></script>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
@@ -351,6 +383,9 @@
                 <img id="imagePreview" alt="图片预览" style="display: none;">
             </div>
             <div class="result-container"></div>
+            <!-- 添加解析报告按钮 -->
+            <button class="action-btn parse-report" style="display: none;">解析报告</button>
+            <div class="parsed-report" style="display: none;"></div>
         </div>
     </div>
 
@@ -375,6 +410,8 @@
         const loading = document.querySelector('.loading');
         const resultContainer = document.querySelector('.result-container');
         const overlay = document.querySelector('.overlay');
+        const parseReportButton = document.querySelector('.parse-report');
+        const parsedReportContainer = document.querySelector('.parsed-report');
 
         // 添加API配置
         const API_KEY = '8f60f0afcc894298a2ecc6ad75a4865f.BjULWUBcMIjFuFu8';
@@ -456,7 +493,38 @@
             MathJax.typeset();
         }
 
-        // 更新按钮点击事件处理
+        // 解析报告按钮点击事件
+        parseReportButton.addEventListener('click', async function() {
+            const file = fileInput.files[0];
+            if (!file) {
+                alert('请先选择图片！');
+                return;
+            }
+
+            try {
+                showLoading();
+                const base64Image = await getBase64(file);
+                const prompt = '请识别图片中的医学报告，并将所有的检查项目和数值通过json格式返回，请确保返回正常的json格式。';
+
+                const result = await callGLM4V(base64Image, prompt);
+                console.log('API返回结果:', result);
+
+                // 清理返回的内容，移除多余的反引号
+                const cleanedResult = result.replace(/```json|```/g, '').trim();
+
+                // 显示返回的内容
+                parsedReportContainer.textContent = JSON.stringify(JSON.parse(cleanedResult), null, 2); // 格式化JSON内容
+                parsedReportContainer.style.display = 'block';
+            } catch (error) {
+                console.error('处理失败:', error);
+                alert('处理失败，请重试！');
+                parsedReportContainer.style.display = 'none';
+            } finally {
+                hideLoading();
+            }
+        });
+
+        // 更新文件输入事件，显示解析报告按钮
         fileInput.addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (file) {
@@ -472,6 +540,7 @@
                     imagePreview.style.display = 'block';
                     imagePreview.src = e.target.result;
                     document.querySelector('.preview-container').style.display = 'block';
+                    parseReportButton.style.display = 'block'; // 显示解析报告按钮
                 };
                 
                 reader.onerror = function() {
