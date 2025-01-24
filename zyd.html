@@ -275,6 +275,7 @@
                                 const selectedType = queryTypeSelect.value;
                                 const existingReportTimeSelect = document.getElementById('reportTimeSelect');
                                 const existingItemSelect = document.getElementById('itemSelect');
+                                const existingAbnormalItemSelect = document.getElementById('abnormalItemSelect');
                                 let reportContent = document.getElementById('reportContent');
 
                                 if (reportContent) {
@@ -288,6 +289,9 @@
 
                                 if (existingReportTimeSelect && reportContainer.contains(existingReportTimeSelect)) {
                                     reportContainer.removeChild(existingReportTimeSelect);
+                                }
+                                if (existingAbnormalItemSelect && reportContainer.contains(existingAbnormalItemSelect)) {
+                                    reportContainer.removeChild(existingAbnormalItemSelect);
                                 }
 
                                 if (selectedType === 'report_time') {
@@ -583,7 +587,7 @@
                                                     const statusStyle = result.status === '正常' ? '' : ' ⚠️';
                                                     content += `${result.formattedDate} -- ${result.data.结果} ${result.data.单位}${statusStyle} ${result.status !== '正常' ? `(${result.status})` : ''}\n`;
                                                     // content += `结果: ${result.data.结果} ${result.data.单位}${statusStyle} ${result.status !== '正常' ? `(${result.status})` : ''}\n`;
-                                                    contentHeader = `${selectedItem} / 参考范围: ${result.data.参考范围} ${result.data.单位}\n`;
+                                                    contentHeader = `${selectedItem} / 正常参考范围: ${result.data.参考范围} ${result.data.单位}\n`;
                                                     // content += `参考范围: ${result.data.参考范围} ${result.data.单位}\n`;
                                                     content += '----------------------------------------\n\n';
                                                 });
