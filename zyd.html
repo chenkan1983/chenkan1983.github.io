@@ -331,7 +331,9 @@
                                     // 添加每个 report_time 到下拉菜单
                                     data.forEach(report => {
                                         const option = document.createElement('option');
-                                        option.text = report.report_time; // 显示报告时间
+                                        // 格式化日期
+                                        const formattedDate = new Date(report.report_time).toLocaleDateString('zh-CN');
+                                        option.text = formattedDate; // 显示格式化后的报告时间
                                         option.value = report.report_data; // 存储对应的报告数据
                                         reportTimeSelect.appendChild(option);
                                     });
@@ -406,7 +408,8 @@
 
                                                 reportData.forEach(item => {
                                                     if (item[selectedItem]) { // 检查当前对象是否有 selectedItem 对应的键
-                                                        content += `报告时间：${report.report_time}\n`;
+                                                        const formattedDate = new Date(report.report_time).toLocaleDateString('zh-CN');
+                                                        content += `报告时间：${formattedDate}\n`;
                                                         content += `${selectedItem}: ${JSON.stringify(item[selectedItem], null, 2)}\n\n`;
                                                     }
                                                 });
@@ -481,7 +484,7 @@
                 let reportTime = localStorage.getItem('reportTime');
                 if (!reportTime) {
                     const now = new Date();
-                    reportTime = now.toISOString(); // 获取当前时间的 ISO 格式
+                    reportTime = now.toISOString().split('T')[0]; // 只保留日期部分 YYYY-MM-DD
                 }
 
                 // 从缓存中读取 reports
