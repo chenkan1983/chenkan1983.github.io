@@ -84,7 +84,7 @@ body {
 
 .report-container {
     display: none;
-    height: 70vh; /* 默认高度 */
+    height: 80vh; /* 默认高度 */
     position: relative;
     padding-top: 60px;
     background-color: #f8f9fa;
