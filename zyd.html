@@ -283,6 +283,12 @@
                                 const existingAbnormalItemSelect = document.getElementById('abnormalItemSelect');
                                 let reportContent = document.getElementById('reportContent');
 
+                                // 隐藏图表容器
+                                const chartContainer = document.getElementById('chartContainer');
+                                if (chartContainer) {
+                                    chartContainer.style.display = 'none';
+                                }
+
                                 if (reportContent) {
                                     reportContent.innerHTML = ''; // 清空内容
                                     reportContainer.removeChild(reportContent);
