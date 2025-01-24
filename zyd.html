@@ -36,7 +36,7 @@
             <label class="query-report">查询报告</label>
         </div>
         <div class="report-container" style="display: none;">
-            <select id="queryTypeSelect"></select>
+            <!-- <select id="queryTypeSelect"></select> -->
         </div>
         <div class="preview-container" style="display: none;">
             <div class="loading">正在加载图片...</div>
@@ -282,6 +282,13 @@
                                 const existingItemSelect = document.getElementById('itemSelect');
                                 const existingAbnormalItemSelect = document.getElementById('abnormalItemSelect');
                                 let reportContent = document.getElementById('reportContent');
+
+                                // 根据选择的类型设置容器高度
+                                if (selectedType === 'specific_abnormal') {
+                                    reportContainer.classList.add('specific-abnormal');
+                                } else {
+                                    reportContainer.classList.remove('specific-abnormal');
+                                }
 
                                 // 隐藏图表容器
                                 const chartContainer = document.getElementById('chartContainer');
@@ -544,11 +551,6 @@
                                     });
 
                                     reportContainer.appendChild(abnormalItemSelect);
-
-                                    // 创建内容显示区域
-                                    reportContent = document.createElement('div');
-                                    reportContent.id = 'reportContent';
-                                    reportContainer.appendChild(reportContent);
 
                                     // 修改异常指标选择事件监听器
                                     abnormalItemSelect.addEventListener('change', function() {

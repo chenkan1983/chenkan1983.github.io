@@ -84,7 +84,7 @@ body {
 
 .report-container {
     display: none;
-    height: 70vh;
+    height: 70vh; /* 默认高度 */
     position: relative;
     padding-top: 60px;
     background-color: #f8f9fa;
@@ -96,6 +96,12 @@ body {
     white-space: pre-wrap;
     line-height: 1.5;
     color: #333;
+    transition: height 0.3s ease; /* 添加过渡效果 */
+}
+
+/* 添加特定异常指标查询时的样式 */
+.report-container.specific-abnormal {
+    height: 30vh;
 }
 
 .report-container select {
