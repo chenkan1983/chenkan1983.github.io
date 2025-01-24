@@ -42,7 +42,6 @@
                 <img id="imagePreview" alt="图片预览" style="display: none;">
             </div>
             <button class="action-btn parse-report" style="display: none;">解析报告</button>
-            <button class="action-btn add-report" style="display: none;">存储数据</button>
             <button class="action-btn upload-report" style="display: none;">上传数据</button>
             <div class="parsed-report" style="display: none;"></div>
         </div>
@@ -200,22 +199,48 @@
                 const parsedData = JSON.parse(cleanedResult);
 
                 // 显示返回的内容
-                parsedReportContainer.textContent = JSON.stringify(parsedData, null, 2); // 格式化JSON内容
+                parsedReportContainer.textContent = JSON.stringify(parsedData, null, 2);
                 parsedReportContainer.style.display = 'block';
 
-                // 只有在成功解析 JSON 数据后才显示添加报告和上传报告按钮
+                // 自动将数据存入缓存
                 if (parsedData) {
-                    document.querySelector('.add-report').style.display = 'block'; // 显示添加报告按钮
-                    document.querySelector('.upload-report').style.display = 'block'; // 显示上传报告按钮
-                } else {
-                    document.querySelector('.add-report').style.display = 'none'; // 隐藏添加报告按钮
-                    document.querySelector('.upload-report').style.display = 'none'; // 隐藏上传按钮
+                    const existingReports = JSON.parse(localStorage.getItem('reports')) || [];
+                    const mergedReports = [...existingReports];
+
+                    // 遍历新报告中的每个检查项
+                    for (const [key, value] of Object.entries(parsedData)) {
+                        const existingItemIndex = mergedReports.findIndex(existingItem => {
+                            return existingItem[key] !== undefined;
+                        });
+                        if (key === '报告时间') {
+                            localStorage.setItem('reportTime', value);
+                        } else {
+                            const reportItem = {
+                                [key]: {
+                                    "结果": value.结果,
+                                    "参考范围": value.参考范围,
+                                    "单位": value.单位
+                                }
+                            };
+                            if (existingItemIndex > -1) {
+                                mergedReports[existingItemIndex] = reportItem;
+                            } else {
+                                mergedReports.push(reportItem);
+                            }
+                        }
+                    }
+                    // 保存合并后的报告到缓存
+                    localStorage.setItem('reports', JSON.stringify(mergedReports));
+                    
+                    // 显示上传报告按钮
+                    document.querySelector('.upload-report').style.display = 'block';
+                    alert('报告已解析并成功存入缓存！');
                 }
             } catch (error) {
                 console.error('处理失败:', error);
                 alert('处理失败，请重试！');
                 parsedReportContainer.style.display = 'none';
-                document.querySelector('.upload-report').style.display = 'none'; // 隐藏上传按钮
+                document.querySelector('.upload-report').style.display = 'none';
             } finally {
                 hideLoading();
             }
@@ -576,55 +601,6 @@
                 document.querySelector('.container').style.display = 'block'; // 显示选择图片的逻辑
             }
         }
-
-        // 添加报告按钮点击事件
-        document.querySelector('.add-report').addEventListener('click', function () {
-            const existingReports = JSON.parse(localStorage.getItem('reports')) || [];
-            const reportTime = localStorage.getItem('reportTime') || '';
-            const newReportText = parsedReportContainer.textContent;
-            // console.log(newReportText);
-            // 确保 newReportText 是有效的 JSON 字符串
-            let newReport;
-            try {
-                newReport = JSON.parse(newReportText);
-            } catch (error) {
-                alert('添加报告内容失败，请检查内容格式！');
-                return;
-            }
-
-            // 合并报告
-            const mergedReports = [...existingReports];
-
-            // 遍历新报告中的每个检查项
-            for (const [key, value] of Object.entries(newReport)) {
-                // 如果新报告中包含报告时间，则添加到缓存
-
-                const existingItemIndex = mergedReports.findIndex(existingItem => {
-                    return existingItem[key] !== undefined; // 判断是否存在与key值重复的项
-                });
-                if (key === '报告时间') {
-                    localStorage.setItem('reportTime', value);
-                } else {
-                    const reportItem = {
-                        [key]: {
-                            "结果": value.结果,
-                            "参考范围": value.参考范围,
-                            "单位": value.单位
-                        }
-                    };
-                    if (existingItemIndex > -1) {
-                        // 如果存在，覆盖重复内容
-                        mergedReports[existingItemIndex] = reportItem;
-                    } else {
-                        // 如果不存在，添加新内容
-                        mergedReports.push(reportItem);
-                    }
-                }
-            }
-            // 保存合并后的报告到缓存
-            localStorage.setItem('reports', JSON.stringify(mergedReports));
-            alert('报告已成功添加到缓存！');
-        });
     </script>
 </body>
 
