@@ -127,39 +127,7 @@
                 throw error;
             }
         }
-        async function callGLM4(content) {
-            try {
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${API_KEY}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        model: 'glm-4-plus',
-                        messages: [{
-                            role: 'user',
-                            content: [
-                                {
-                                    type: 'text',
-                                    text: content
-                                }
-                            ]
-                        }]
-                    })
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                const data = await response.json();
-                return data.choices[0].message.content;
-            } catch (error) {
-                console.error('API调用失败:', error);
-                throw error;
-            }
-        }
+        
 
         // 显示/隐藏加载动画的函数
         function showLoading() {
@@ -428,27 +396,71 @@
                                     
                                     showLoading();
                                     
-                                    // 收集所有报告数据
-                                    let allReportsData = data.map(report => {
-                                        return {
-                                            report_time: report.report_time,
-                                            data: JSON.parse(report.report_data)
-                                        };
-                                    });
-                                    
-                                    // 构建发送给智谱API的数据
-                                    let prompt = "请帮我解析所有检查项，找出其中数据异常的检查项，并将这些异常检查项名称和数据整理后发给我";
                                     try {
-                                        console.log("发起请求解析异常指标")
-                                        const result = await callGLM4(prompt + "\n" + JSON.stringify(allReportsData, null, 2))
-                                        console.log('API返回结果:', result);
+                                        // 收集所有报告数据并分析异常值
+                                        let abnormalResults = [];
                                         
-                                        // 将markdown格式的内容转换为HTML并显示
-                                        reportContent.innerHTML = marked.parse(result);
+                                        data.forEach(report => {
+                                            const reportDate = new Date(report.report_time).toLocaleDateString('zh-CN');
+                                            const reportData = JSON.parse(report.report_data);
+                                            
+                                            reportData.forEach(item => {
+                                                // 遍历每个检查项
+                                                for (const [itemName, itemData] of Object.entries(item)) {
+                                                    if (itemData.结果 && itemData.参考范围) {
+                                                        // 解析参考范围
+                                                        const range = itemData.参考范围.split('-');
+                                                        if (range.length === 2) {
+                                                            const min = parseFloat(range[0]);
+                                                            const max = parseFloat(range[1]);
+                                                            const result = parseFloat(itemData.结果);
+                                                            
+                                                            // 检查是否为数值且在范围外
+                                                            if (!isNaN(result) && !isNaN(min) && !isNaN(max)) {
+                                                                if (result < min || result > max) {
+                                                                    abnormalResults.push({
+                                                                        reportTime: reportDate,
+                                                                        itemName: itemName,
+                                                                        result: itemData.结果,
+                                                                        range: itemData.参考范围,
+                                                                        unit: itemData.单位,
+                                                                        status: result < min ? '偏低' : '偏高'
+                                                                    });
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            });
+                                        });
+                                        
+                                        // 按报告时间排序
+                                        abnormalResults.sort((a, b) => new Date(b.reportTime) - new Date(a.reportTime));
+                                        
+                                        // 生成展示内容
+                                        let content = '';
+                                        let currentReportTime = '';
+                                        
+                                        abnormalResults.forEach(item => {
+                                            if (currentReportTime !== item.reportTime) {
+                                                currentReportTime = item.reportTime;
+                                                content += `\n报告时间：${item.reportTime}\n`;
+                                                content += '----------------------------------------\n';
+                                            }
+                                            content += `${item.itemName}:\n`;
+                                            content += `  结果: ${item.result} ${item.unit} (${item.status})\n`;
+                                            content += `  参考范围: ${item.range} ${item.unit}\n\n`;
+                                        });
+                                        
+                                        if (abnormalResults.length === 0) {
+                                            content = '未发现异常指标。';
+                                        }
+                                        
+                                        reportContent.innerHTML = `<pre>${content}</pre>`;
                                         
                                     } catch (error) {
-                                        console.error('API调用失败:', error);
-                                        alert('API调用失败，请重试！');
+                                        console.error('处理异常指标时出错:', error);
+                                        alert('处理异常指标时发生错误，请重试！');
                                     } finally {
                                         hideLoading();
                                     }
