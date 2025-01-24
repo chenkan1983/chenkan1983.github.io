@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>报告查询</title>
     <link rel="stylesheet" href="./css/zyd.css">
+    <!-- 添加 ECharts 库 -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
 </head>
 
 <body>
@@ -48,6 +50,9 @@
             <div class="parsed-report" style="display: none;"></div>
         </div>
     </div>
+
+    <!-- 在 reportContent div 之前添加图表容器 -->
+    <div id="chartContainer" style="width: 100%; height: 300px; display: none;"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
@@ -488,6 +493,10 @@
                                 }
 
                                 else if (selectedType === 'specific_abnormal') {
+                                    // 创建图表容器
+                                    const chartContainer = document.getElementById('chartContainer');
+                                    chartContainer.style.display = 'none';
+                                    
                                     // 创建异常指标选择下拉列表
                                     const abnormalItemSelect = document.createElement('select');
                                     abnormalItemSelect.id = 'abnormalItemSelect';
@@ -535,7 +544,7 @@
                                     reportContent.id = 'reportContent';
                                     reportContainer.appendChild(reportContent);
 
-                                    // 添加异常指标选择事件监听器
+                                    // 修改异常指标选择事件监听器
                                     abnormalItemSelect.addEventListener('change', function() {
                                         const selectedItem = abnormalItemSelect.value;
                                         
@@ -569,7 +578,9 @@
                                                         results.push({
                                                             date: new Date(report.report_time),
                                                             formattedDate: new Date(report.report_time).toLocaleDateString('zh-CN'),
-                                                            data: itemData,
+                                                            value: parseFloat(itemData.结果),
+                                                            unit: itemData.单位,
+                                                            range: itemData.参考范围,
                                                             status: status
                                                         });
                                                     }
@@ -577,27 +588,100 @@
                                             });
 
                                             // 按时间排序结果
-                                            results.sort((a, b) => b.date - a.date);
+                                            results.sort((a, b) => a.date - b.date);
 
-                                            // 生成展示内容
-                                            let content = '';
-                                            let contentHeader = '';
-                                            if (results.length > 0) {
-                                                results.forEach(result => {
-                                                    const statusStyle = result.status === '正常' ? '' : ' ⚠️';
-                                                    content += `${result.formattedDate} -- ${result.data.结果} ${result.data.单位}${statusStyle} ${result.status !== '正常' ? `(${result.status})` : ''}\n`;
-                                                    // content += `结果: ${result.data.结果} ${result.data.单位}${statusStyle} ${result.status !== '正常' ? `(${result.status})` : ''}\n`;
-                                                    contentHeader = `${selectedItem} / 正常参考范围: ${result.data.参考范围} ${result.data.单位}\n`;
-                                                    // content += `参考范围: ${result.data.参考范围} ${result.data.单位}\n`;
-                                                    content += '----------------------------------------\n\n';
-                                                });
-                                            } else {
-                                                content = '未找到该指标的检查记录。';
-                                            }
-                                            contentHeader += '----------------------------------------\n\n';
-                                            reportContent.innerHTML = `<pre>${contentHeader}${content}</pre>`;
+                                            // 准备图表数据
+                                            const dates = results.map(item => item.formattedDate);
+                                            const values = results.map(item => item.value);
+                                            const range = results[0]?.range.split('-').map(num => parseFloat(num)) || [];
+                                            const unit = results[0]?.unit || '';
+
+                                            // 显示图表容器
+                                            chartContainer.style.display = 'block';
+
+                                            // 初始化 ECharts 实例
+                                            const myChart = echarts.init(chartContainer);
+
+                                            // 配置图表选项
+                                            const option = {
+                                                title: {
+                                                    text: `${selectedItem} 趋势图`,
+                                                    subtext: `参考范围: ${results[0]?.range} ${unit}`,
+                                                    left: 'center',
+                                                    padding: [0, 0, 20, 0]  // 添加底部内边距
+                                                },
+                                                grid: {
+                                                    top: 100,  // 距离容器上边距的距离
+                                                    left: 50,  // 距离容器左边距的距离
+                                                    right: 50, // 距离容器右边距的距离
+                                                    bottom: 50 // 距离容器下边距的距离
+                                                },
+                                                tooltip: {
+                                                    trigger: 'axis',
+                                                    formatter: function(params) {
+                                                        const dataIndex = params[0].dataIndex;
+                                                        const result = results[dataIndex];
+                                                        return `日期：${result.formattedDate}<br/>
+                                                                数值：${result.value} ${unit}<br/>
+                                                                状态：${result.status}`;
+                                                    }
+                                                },
+                                                xAxis: {
+                                                    type: 'category',
+                                                    data: dates,
+                                                    axisLabel: {
+                                                        rotate: 45
+                                                    }
+                                                },
+                                                yAxis: {
+                                                    type: 'value',
+                                                    name: unit,
+                                                    axisLine: { show: true },
+                                                    splitLine: { show: true },
+                                                    markArea: range.length === 2 ? {
+                                                        itemStyle: {
+                                                            color: 'rgba(0, 255, 0, 0.1)'
+                                                        },
+                                                        data: [[{
+                                                            yAxis: range[0]
+                                                        }, {
+                                                            yAxis: range[1]
+                                                        }]]
+                                                    } : undefined
+                                                },
+                                                series: [{
+                                                    name: selectedItem,
+                                                    type: 'line',
+                                                    data: values,
+                                                    markPoint: {
+                                                        data: results.map((item, index) => ({
+                                                            value: item.value,
+                                                            coord: [index, item.value],
+                                                            itemStyle: {
+                                                                color: item.status === '正常' ? '#67C23A' : 
+                                                                       item.status === '偏高' ? '#F56C6C' : '#E6A23C'
+                                                            }
+                                                        }))
+                                                    },
+                                                    lineStyle: {
+                                                        width: 2
+                                                    },
+                                                    symbol: 'circle',
+                                                    symbolSize: 8
+                                                }]
+                                            };
+
+                                            // 使用配置项显示图表
+                                            myChart.setOption(option);
+
+                            
+                                            // 监听窗口大小变化，调整图表大小
+                                            window.addEventListener('resize', function() {
+                                                myChart.resize();
+                                            });
                                         } else {
                                             reportContent.innerHTML = '';
+                                            chartContainer.style.display = 'none';
                                         }
                                     });
                                 }
