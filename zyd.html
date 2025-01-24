@@ -254,10 +254,14 @@
                         const option4 = document.createElement('option');
                         option4.text = '特定指标查询';
                         option4.value = 'specific';
+                        const option5 = document.createElement('option');
+                        option5.text = '特定异常指标查询';
+                        option5.value = 'specific_abnormal';
                         queryTypeSelect.appendChild(option1);
                         queryTypeSelect.appendChild(option2);
                         queryTypeSelect.appendChild(option3);
                         queryTypeSelect.appendChild(option4);
+                        queryTypeSelect.appendChild(option5);
                         reportContainer.appendChild(queryTypeSelect);
                     } else {
                         console.error('报告容器元素不存在');
@@ -477,6 +481,121 @@
                                     } finally {
                                         hideLoading();
                                     }
+                                }
+
+                                else if (selectedType === 'specific_abnormal') {
+                                    // 创建异常指标选择下拉列表
+                                    const abnormalItemSelect = document.createElement('select');
+                                    abnormalItemSelect.id = 'abnormalItemSelect';
+                                    const defaultOption = document.createElement('option');
+                                    defaultOption.text = '选择异常指标';
+                                    defaultOption.value = '';
+                                    abnormalItemSelect.appendChild(defaultOption);
+
+                                    // 收集所有异常指标
+                                    const abnormalItems = new Set();
+                                    data.forEach(report => {
+                                        const reportData = JSON.parse(report.report_data);
+                                        reportData.forEach(item => {
+                                            for (const [itemName, itemData] of Object.entries(item)) {
+                                                if (itemData.结果 && itemData.参考范围) {
+                                                    const range = itemData.参考范围.split('-');
+                                                    if (range.length === 2) {
+                                                        const min = parseFloat(range[0]);
+                                                        const max = parseFloat(range[1]);
+                                                        const result = parseFloat(itemData.结果);
+                                                        
+                                                        if (!isNaN(result) && !isNaN(min) && !isNaN(max)) {
+                                                            if (result < min || result > max) {
+                                                                abnormalItems.add(itemName);
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        });
+                                    });
+
+                                    // 将收集到的异常指标添加到下拉列表
+                                    Array.from(abnormalItems).sort().forEach(itemName => {
+                                        const option = document.createElement('option');
+                                        option.text = itemName;
+                                        option.value = itemName;
+                                        abnormalItemSelect.appendChild(option);
+                                    });
+
+                                    reportContainer.appendChild(abnormalItemSelect);
+
+                                    // 创建内容显示区域
+                                    reportContent = document.createElement('div');
+                                    reportContent.id = 'reportContent';
+                                    reportContainer.appendChild(reportContent);
+
+                                    // 添加异常指标选择事件监听器
+                                    abnormalItemSelect.addEventListener('change', function() {
+                                        const selectedItem = abnormalItemSelect.value;
+                                        
+                                        if (selectedItem) {
+                                            let results = [];
+                                            data.forEach(report => {
+                                                const reportData = JSON.parse(report.report_data);
+                                                reportData.forEach(item => {
+                                                    if (item[selectedItem]) {
+                                                        const itemData = item[selectedItem];
+                                                        let status = '正常';
+                                                        
+                                                        // 判断是否为异常值
+                                                        if (itemData.结果 && itemData.参考范围) {
+                                                            const range = itemData.参考范围.split('-');
+                                                            if (range.length === 2) {
+                                                                const min = parseFloat(range[0]);
+                                                                const max = parseFloat(range[1]);
+                                                                const result = parseFloat(itemData.结果);
+                                                                
+                                                                if (!isNaN(result) && !isNaN(min) && !isNaN(max)) {
+                                                                    if (result < min) {
+                                                                        status = '偏低';
+                                                                    } else if (result > max) {
+                                                                        status = '偏高';
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                        
+                                                        results.push({
+                                                            date: new Date(report.report_time),
+                                                            formattedDate: new Date(report.report_time).toLocaleDateString('zh-CN'),
+                                                            data: itemData,
+                                                            status: status
+                                                        });
+                                                    }
+                                                });
+                                            });
+
+                                            // 按时间排序结果
+                                            results.sort((a, b) => b.date - a.date);
+
+                                            // 生成展示内容
+                                            let content = '';
+                                            if (results.length > 0) {
+                                                content += `${selectedItem} 的历史记录：\n`;
+                                                content += '----------------------------------------\n\n';
+                                                results.forEach(result => {
+                                                    const statusStyle = result.status === '正常' ? '' : ' ⚠️';
+                                                    content += `报告时间：${result.formattedDate}\n`;
+                                                    content += `结果: ${result.data.结果} ${result.data.单位}${statusStyle} ${result.status !== '正常' ? `(${result.status})` : ''}\n`;
+                                                    content += `参考范围: ${result.data.参考范围} ${result.data.单位}\n`;
+                                                    content += '----------------------------------------\n\n';
+                                                });
+                                            } else {
+                                                content = '未找到该指标的检查记录。';
+                                            }
+
+                                            reportContent.innerHTML = `<pre>${content}</pre>`;
+                                        } else {
+                                            reportContent.innerHTML = '';
+                                        }
+                                    });
                                 }
                             } catch (error) {
                                 console.error('处理查询类型选择时出错:', error);

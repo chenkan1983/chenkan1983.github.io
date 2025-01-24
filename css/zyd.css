@@ -534,7 +534,8 @@ body {
 /* 美化下拉列表 */
 #queryTypeSelect,
 #reportTimeSelect,
-#itemSelect {
+#itemSelect,
+#abnormalItemSelect {
     width: 100%;
     padding: 12px;
     border: 1px solid #ccc;
@@ -548,14 +549,16 @@ body {
 
 #queryTypeSelect:hover,
 #reportTimeSelect:hover,
-#itemSelect:hover {
+#itemSelect:hover,
+#abnormalItemSelect:hover {
     border-color: #4CAF50;
     /* 悬停时边框颜色 */
 }
 
 #queryTypeSelect:focus,
 #reportTimeSelect:focus,
-#itemSelect:focus {
+#itemSelect:focus,
+#abnormalItemSelect:focus {
     outline: none;
     border-color: #4CAF50;
     /* 聚焦时边框颜色 */
@@ -565,7 +568,8 @@ body {
 
 #queryTypeSelect,
 #reportTimeSelect,
-#itemSelect {
+#itemSelect,
+#abnormalItemSelect {
     position: sticky;
     top: 0;
     background-color: #f8f9fa;
