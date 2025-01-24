@@ -577,21 +577,21 @@
 
                                             // 生成展示内容
                                             let content = '';
+                                            let contentHeader = '';
                                             if (results.length > 0) {
-                                                content += `${selectedItem} 的历史记录：\n`;
-                                                content += '----------------------------------------\n\n';
                                                 results.forEach(result => {
                                                     const statusStyle = result.status === '正常' ? '' : ' ⚠️';
-                                                    content += `报告时间：${result.formattedDate}\n`;
-                                                    content += `结果: ${result.data.结果} ${result.data.单位}${statusStyle} ${result.status !== '正常' ? `(${result.status})` : ''}\n`;
-                                                    content += `参考范围: ${result.data.参考范围} ${result.data.单位}\n`;
+                                                    content += `${result.formattedDate} -- ${result.data.结果} ${result.data.单位}${statusStyle} ${result.status !== '正常' ? `(${result.status})` : ''}\n`;
+                                                    // content += `结果: ${result.data.结果} ${result.data.单位}${statusStyle} ${result.status !== '正常' ? `(${result.status})` : ''}\n`;
+                                                    contentHeader = `${selectedItem} / 参考范围: ${result.data.参考范围} ${result.data.单位}\n`;
+                                                    // content += `参考范围: ${result.data.参考范围} ${result.data.单位}\n`;
                                                     content += '----------------------------------------\n\n';
                                                 });
                                             } else {
                                                 content = '未找到该指标的检查记录。';
                                             }
-
-                                            reportContent.innerHTML = `<pre>${content}</pre>`;
+                                            contentHeader += '----------------------------------------\n\n';
+                                            reportContent.innerHTML = `<pre>${contentHeader}${content}</pre>`;
                                         } else {
                                             reportContent.innerHTML = '';
                                         }
