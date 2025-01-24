@@ -6,8 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>报告查询</title>
     <link rel="stylesheet" href="./css/zyd.css">
-    <script src="https://cdn.jsdelivr.net/npm/@babel/polyfill/dist/polyfill.min.js"></script>
-    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
 
 <body>
@@ -34,15 +32,9 @@
                 录入报告
             </label>
             <label class="query-report">查询报告</label>
-
         </div>
         <div class="report-container" style="display: none;">
             <select id="queryTypeSelect"></select>
-            <!-- 报告时间下拉列表 -->
-            <select id="reportTimeSelect" style="display: none;">
-                <!-- 这里可以添加更多的报告时间选项 -->
-            </select>
-            <!-- 这里可以添加其他内容 -->
         </div>
         <div class="preview-container" style="display: none;">
             <div class="loading">正在加载图片...</div>
@@ -57,28 +49,13 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <!-- <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script> -->
 
     <script type="module">
         import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
 
-        const supabaseUrl = 'https://faqeootsprjlssgmuzyq.supabase.co'; // 替换为你的 Supabase URL
+        const supabaseUrl = 'https://faqeootsprjlssgmuzyq.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhcWVvb3RzcHJqbHNzZ211enlxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzc2MDYzNDAsImV4cCI6MjA1MzE4MjM0MH0.y7Sldz60c-pnMLtR-LF8BCv297xe_EeTNIPWDBa7mec'; // 替换为你的 Supabase 匿名密钥
         const supabase = createClient(supabaseUrl, supabaseKey);
-
-        MathJax = {
-            tex: {
-                inlineMath: [['$', '$'], ['\\(', '\\)']],
-                displayMath: [['$$', '$$'], ['\\[', '\\]']]
-            },
-            options: {
-                renderActions: {
-                    findScript: [10, function (doc) {
-                        // 这里可以添加自定义的处理逻辑
-                    }, '']
-                }
-            }
-        };
 
         const fileInput = document.getElementById('fileInput');
         const imagePreview = document.getElementById('imagePreview');
@@ -166,11 +143,6 @@
             sanitize: false // 允许 HTML 标签
         });
 
-        // 在处理结果后，调用 MathJax 渲染公式
-        function renderMath() {
-            MathJax.typeset();
-        }
-
         // 解析报告按钮点击事件
         parseReportButton.addEventListener('click', async function () {
             const file = fileInput.files[0];
@@ -239,77 +211,158 @@
 
                 if (data.length > 0) {
                     // 创建查询类型下拉菜单
-                    const queryTypeSelect = document.createElement('select');
-                    queryTypeSelect.id = 'queryTypeSelect';
-                    const option1 = document.createElement('option');
-                    option1.text = '选择查询类型';
-                    option1.value = '';
-                    const option2 = document.createElement('option');
-                    option2.text = '报告时间';
-                    option2.value = 'report_time';
-                    const option3 = document.createElement('option');
-                    option3.text = '异常指标';
-                    option3.value = 'abnormal';
-                    const option4 = document.createElement('option');
-                    option4.text = '特定指标';
-                    option4.value = 'specific';
-                    queryTypeSelect.appendChild(option1);
-                    queryTypeSelect.appendChild(option2);
-                    queryTypeSelect.appendChild(option3);
-                    queryTypeSelect.appendChild(option4);
-                    reportContainer.appendChild(queryTypeSelect);
+                    if (reportContainer) {
+                        const queryTypeSelect = document.createElement('select');
+                        queryTypeSelect.id = 'queryTypeSelect';
+                        const option1 = document.createElement('option');
+                        option1.text = '选择查询类型';
+                        option1.value = '';
+                        const option2 = document.createElement('option');
+                        option2.text = '报告时间';
+                        option2.value = 'report_time';
+                        const option3 = document.createElement('option');
+                        option3.text = '异常指标';
+                        option3.value = 'abnormal';
+                        const option4 = document.createElement('option');
+                        option4.text = '特定指标';
+                        option4.value = 'specific';
+                        queryTypeSelect.appendChild(option1);
+                        queryTypeSelect.appendChild(option2);
+                        queryTypeSelect.appendChild(option3);
+                        queryTypeSelect.appendChild(option4);
+                        reportContainer.appendChild(queryTypeSelect);
+                    } else {
+                        console.error('报告容器元素不存在');
+                        return;
+                    }
 
                     // 添加事件监听器以处理查询类型选择
-                    queryTypeSelect.addEventListener('change', function () {
-                        const selectedType = queryTypeSelect.value;
-                        const existingReportTimeSelect = document.getElementById('reportTimeSelect');
-                        const reportContent = document.getElementById('reportContent');
+                    if (queryTypeSelect) {
+                        queryTypeSelect.addEventListener('change', function () {
+                            try {
+                                const selectedType = queryTypeSelect.value;
+                                const existingReportTimeSelect = document.getElementById('reportTimeSelect');
+                                const existingItemSelect = document.getElementById('itemSelect');
+                                let reportContent = document.getElementById('reportContent');
 
-                        if (selectedType === 'report_time') {
-                            // 检查是否已经存在报告时间下拉菜单
-                            if (!existingReportTimeSelect) {
-                                // 创建报告时间下拉菜单
-                                const reportTimeSelect = document.createElement('select');
-                                reportTimeSelect.id = 'reportTimeSelect';
-                                const defaultOption = document.createElement('option');
-                                defaultOption.text = '选择报告时间';
-                                defaultOption.value = '';
-                                reportTimeSelect.appendChild(defaultOption);
+                                if (reportContent) {
+                                    reportContent.innerHTML = ''; // 清空内容
+                                    reportContainer.removeChild(reportContent);
+                                }
+                                // 移除之前可能存在的itemSelect
+                                if (existingItemSelect && reportContainer.contains(existingItemSelect)) {
+                                    reportContainer.removeChild(existingItemSelect);
+                                }
 
-                                // 添加每个 report_time 到下拉菜单
-                                data.forEach(report => {
-                                    const option = document.createElement('option');
-                                    option.text = report.report_time; // 显示报告时间
-                                    option.value = report.report_data; // 存储对应的报告数据
-                                    reportTimeSelect.appendChild(option);
-                                });
+                                if (existingReportTimeSelect && reportContainer.contains(existingReportTimeSelect)) {
+                                    reportContainer.removeChild(existingReportTimeSelect);
+                                }
 
-                                reportContainer.appendChild(reportTimeSelect);
+                                if (selectedType === 'report_time') {
+                                    // 检查是否已经存在报告时间下拉菜单
+                                    // 创建报告时间下拉菜单
+                                    const reportTimeSelect = document.createElement('select');
+                                    reportTimeSelect.id = 'reportTimeSelect';
+                                    const defaultOption = document.createElement('option');
+                                    defaultOption.text = '选择报告时间';
+                                    defaultOption.value = '';
+                                    reportTimeSelect.appendChild(defaultOption);
 
-                                // 清空报告内容展示区
-                                const reportContent = document.createElement('div');
-                                reportContent.id = 'reportContent';
-                                reportContainer.appendChild(reportContent);
+                                    // 添加每个 report_time 到下拉菜单
+                                    data.forEach(report => {
+                                        const option = document.createElement('option');
+                                        option.text = report.report_time; // 显示报告时间
+                                        option.value = report.report_data; // 存储对应的报告数据
+                                        reportTimeSelect.appendChild(option);
+                                    });
 
-                                // 添加事件监听器以显示选中的报告内容
-                                reportTimeSelect.addEventListener('change', function () {
-                                    const selectedReportData = reportTimeSelect.value;
-                                    if (selectedReportData) {
-                                        const formattedData = JSON.stringify(JSON.parse(selectedReportData), null, 2); // 格式化为可读的 JSON
-                                        reportContent.innerHTML = `<pre>${formattedData}</pre>`; // 显示选中的报告内容
-                                    } else {
-                                        reportContent.innerHTML = ''; // 清空内容
-                                    }
-                                });
+                                    reportContainer.appendChild(reportTimeSelect);
+
+                                    reportContent = document.createElement('div');
+                                    reportContent.id = 'reportContent';
+                                    reportContainer.appendChild(reportContent);
+
+                                    // 添加事件听器以显示选中的报告内容
+                                    reportTimeSelect.addEventListener('change', function () {
+                                        const selectedReportData = reportTimeSelect.value;
+                                        if (selectedReportData) {
+                                            const formattedData = JSON.stringify(JSON.parse(selectedReportData), null, 2); // 格式化为可读的 JSON
+                                            reportContent.innerHTML = `<pre>${formattedData}</pre>`; // 显示选中的报告内容
+                                        } else {
+                                            reportContent.innerHTML = ''; // 清空内容
+                                        }
+                                    });
+                                }
+
+                                else if (selectedType === 'specific') {
+                                    // 创建新的下拉列表
+                                    const itemSelect = document.createElement('select');
+                                    itemSelect.id = 'itemSelect';
+
+                                    // 添加默认选项
+                                    const defaultOption = document.createElement('option');
+                                    defaultOption.text = '选择检查项目';
+                                    defaultOption.value = '';
+                                    itemSelect.appendChild(defaultOption);
+
+                                    // 收集所有检查项目并去重
+                                    const allItems = new Set();
+                                    data.forEach(report => {
+                                        const reportData = JSON.parse(report.report_data);
+
+                                        reportData.forEach(item => {
+                                            // 遍历 item 的键
+                                            for (const key in item) {
+                                                if (item.hasOwnProperty(key)) { // 确保 key 是 item 自身的属性
+                                                    // console.log(`Key: ${key}, 结果: ${value.结果}, 参考范围: ${value.参考范围}, 单位: ${value.单位}`);
+                                                    allItems.add(key);
+                                                }
+                                            }
+                                        });
+                                    });
+
+                                    // 将去重后的检查项目添加到下拉列表
+                                    allItems.forEach(item => {
+                                        const option = document.createElement('option');
+                                        option.text = item;
+                                        option.value = item;
+                                        itemSelect.appendChild(option);
+                                    });
+
+                                    reportContainer.appendChild(itemSelect);
+
+                                    reportContent = document.createElement('div');
+                                    reportContent.id = 'reportContent';
+                                    reportContainer.appendChild(reportContent);
+
+                                    // 添加事件监听器以显示选中的检查项目内容
+                                    itemSelect.addEventListener('change', function () {
+                                        const selectedItem = itemSelect.value;
+            
+                                        if (selectedItem) {
+                                            let content = '';
+                                            data.forEach(report => {
+                                                const reportData = JSON.parse(report.report_data);
+
+                                                reportData.forEach(item => {
+                                                    if (item[selectedItem]) { // 检查当前对象是否有 selectedItem 对应的键
+                                                        content += `报告时间：${report.report_time}\n`;
+                                                        content += `${selectedItem}: ${JSON.stringify(item[selectedItem], null, 2)}\n\n`;
+                                                    }
+                                                });
+                                            });
+                                            reportContent.innerHTML = `<pre>${content}</pre>`;
+                                        } else {
+                                            reportContent.innerHTML = '';
+                                        }
+                                    });
+                                }
+                            } catch (error) {
+                                console.error('处理查询类型选择时出错:', error);
+                                alert('处理查询类型时发生错误，请重试！');
                             }
-                        } else {
-                            // 如果选择的不是报告时间，移除报告时间下拉菜单和报告内容
-                            if (existingReportTimeSelect) {
-                                reportContainer.removeChild(existingReportTimeSelect);
-                            }
-                            reportContent.innerHTML = ''; // 清空报告内容
-                        }
-                    });
+                        });
+                    }
                 } else {
                     reportContainer.textContent = '没有找到相关报告。';
                 }
