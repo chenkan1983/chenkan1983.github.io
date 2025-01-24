@@ -287,7 +287,6 @@
                                 }
 
                                 if (selectedType === 'report_time') {
-                                    // 检查是否已经存在报告时间下拉菜单
                                     // 创建报告时间下拉菜单
                                     const reportTimeSelect = document.createElement('select');
                                     reportTimeSelect.id = 'reportTimeSelect';
@@ -296,13 +295,15 @@
                                     defaultOption.value = '';
                                     reportTimeSelect.appendChild(defaultOption);
 
+                                    // 按时间排序数据
+                                    const sortedData = [...data].sort((a, b) => new Date(b.report_time) - new Date(a.report_time));
+
                                     // 添加每个 report_time 到下拉菜单
-                                    data.forEach(report => {
+                                    sortedData.forEach(report => {
                                         const option = document.createElement('option');
-                                        // 格式化日期
                                         const formattedDate = new Date(report.report_time).toLocaleDateString('zh-CN');
-                                        option.text = formattedDate; // 显示格式化后的报告时间
-                                        option.value = report.report_data; // 存储对应的报告数据
+                                        option.text = formattedDate;
+                                        option.value = report.report_data;
                                         reportTimeSelect.appendChild(option);
                                     });
 
@@ -370,19 +371,31 @@
                                         const selectedItem = itemSelect.value;
             
                                         if (selectedItem) {
-                                            let content = '';
+                                            let results = [];
                                             data.forEach(report => {
                                                 const reportData = JSON.parse(report.report_data);
-
                                                 reportData.forEach(item => {
-                                                    if (item[selectedItem]) { // 检查当前对象是否有 selectedItem 对应的键
-                                                        const formattedDate = new Date(report.report_time).toLocaleDateString('zh-CN');
-                                                        content += `报告时间：${formattedDate}\n`;
-                                                        content += `${selectedItem}: ${JSON.stringify(item[selectedItem], null, 2)}\n\n`;
+                                                    if (item[selectedItem]) {
+                                                        results.push({
+                                                            date: new Date(report.report_time),
+                                                            formattedDate: new Date(report.report_time).toLocaleDateString('zh-CN'),
+                                                            data: item[selectedItem]
+                                                        });
                                                     }
                                                 });
                                             });
-                                            reportContent.innerHTML = `<pre>${content}</pre>`;
+
+                                            // 按时间排序结果
+                                            results.sort((a, b) => b.date - a.date);
+
+                                            // 生成展示内容
+                                            let content = '';
+                                            results.forEach(result => {
+                                                content += `报告时间：${result.formattedDate}\n`;
+                                                content += `${selectedItem}: ${JSON.stringify(result.data, null, 2)}\n\n`;
+                                            });
+
+                                            reportContent.innerHTML = content ? `<pre>${content}</pre>` : '';
                                         } else {
                                             reportContent.innerHTML = '';
                                         }
