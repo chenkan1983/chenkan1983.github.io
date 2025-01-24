@@ -102,6 +102,7 @@ body {
 /* 添加特定异常指标查询时的样式 */
 .report-container.specific-abnormal {
     height: 30vh;
+    padding-top: 40px; /* 减小顶部内边距 */
 }
 
 .report-container select {
@@ -630,8 +631,11 @@ body {
 
 /* 修改图表容器样式 */
 #chartContainer {
-    width: 100%;
-    height: calc(100% - 140px) !important;
-    margin-top: 140px;
-    padding: 0 20px;
+    width: 100% !important;
+    height: calc(100% - 100px) !important; /* 减小与select的距离 */
+    margin-top: 20px; /* 减小顶部边距 */
+    margin-bottom: 20px;
+    padding: 0;
+    box-sizing: border-box;
 }
+

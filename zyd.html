@@ -613,16 +613,16 @@
                                             // 配置图表选项
                                             const option = {
                                                 title: {
-                                                    text: `${selectedItem} 趋势图`,
+                                                    text: `${selectedItem}`,
                                                     subtext: `参考范围: ${results[0]?.range} ${unit}`,
                                                     left: 'center',
-                                                    padding: [0, 0, 20, 0]  // 添加底部内边距
+                                                    padding: [0, 0, 20, 0]
                                                 },
                                                 grid: {
-                                                    top: 100,  // 距离容器上边距的距离
-                                                    left: 50,  // 距离容器左边距的距离
-                                                    right: 50, // 距离容器右边距的距离
-                                                    bottom: 50 // 距离容器下边距的距离
+                                                    top: 100,
+                                                    left: 50,
+                                                    right: 50,
+                                                    bottom: 100  // 增加底部空间
                                                 },
                                                 tooltip: {
                                                     trigger: 'axis',
@@ -638,7 +638,9 @@
                                                     type: 'category',
                                                     data: dates,
                                                     axisLabel: {
-                                                        rotate: 45
+                                                        rotate: 45,  // 旋转标签
+                                                        interval: 0,  // 显示所有标签
+                                                        margin: 15   // 增加标签与轴的距离
                                                     }
                                                 },
                                                 yAxis: {
