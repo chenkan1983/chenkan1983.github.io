@@ -126,6 +126,39 @@
                 throw error;
             }
         }
+        async function callGLM4(content) {
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${API_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        model: 'glm-4-plus',
+                        messages: [{
+                            role: 'user',
+                            content: [
+                                {
+                                    type: 'text',
+                                    text: content
+                                }
+                            ]
+                        }]
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                return data.choices[0].message.content;
+            } catch (error) {
+                console.error('API调用失败:', error);
+                throw error;
+            }
+        }
 
         // 显示/隐藏加载动画的函数
         function showLoading() {
@@ -238,7 +271,7 @@
 
                     // 添加事件监听器以处理查询类型选择
                     if (queryTypeSelect) {
-                        queryTypeSelect.addEventListener('change', function () {
+                        queryTypeSelect.addEventListener('change', async function () {
                             try {
                                 const selectedType = queryTypeSelect.value;
                                 const existingReportTimeSelect = document.getElementById('reportTimeSelect');
@@ -356,6 +389,39 @@
                                             reportContent.innerHTML = '';
                                         }
                                     });
+                                }
+
+                                else if (selectedType === 'abnormal') {
+                                    reportContent = document.createElement('div');
+                                    reportContent.id = 'reportContent';
+                                    reportContainer.appendChild(reportContent);
+                                    
+                                    showLoading();
+                                    
+                                    // 收集所有报告数据
+                                    let allReportsData = data.map(report => {
+                                        return {
+                                            report_time: report.report_time,
+                                            data: JSON.parse(report.report_data)
+                                        };
+                                    });
+                                    
+                                    // 构建发送给智谱API的数据
+                                    let prompt = "请帮我解析所有检查项，找出其中数据异常的检查项，并将这些异常检查项名称和数据整理后发给我";
+                                    try {
+                                        console.log("发起请求解析异常指标")
+                                        const result = await callGLM4(prompt + "\n" + JSON.stringify(allReportsData, null, 2))
+                                        console.log('API返回结果:', result);
+                                        
+                                        // 将markdown格式的内容转换为HTML并显示
+                                        reportContent.innerHTML = marked.parse(result);
+                                        
+                                    } catch (error) {
+                                        console.error('API调用失败:', error);
+                                        alert('API调用失败，请重试！');
+                                    } finally {
+                                        hideLoading();
+                                    }
                                 }
                             } catch (error) {
                                 console.error('处理查询类型选择时出错:', error);
