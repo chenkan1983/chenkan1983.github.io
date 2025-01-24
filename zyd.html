@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -24,46 +25,113 @@
             text-align: center;
             overflow: hidden;
         }
+
         .upload-container {
             display: flex;
+            flex-direction: row;
             width: 100vw;
-            height: 100vh;
-            justify-content: center;
+            height: 20%;
+            justify-content: space-around;
             align-items: center;
-            
+            /* padding-top: 20px; */
+            /* background-color: red; */
         }
+
         .upload-btn {
             display: inline-block;
-            padding: 12px 24px;
+            /* padding: 12px 24px; */
             background-color: #4CAF50;
             color: white;
             border-radius: 8px;
             cursor: pointer;
-            margin: auto; /* 修改为自动边距以实现居中 */
+            /* margin-top: 20px; */
             font-size: 16px;
             transition: all 0.3s ease;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            width: 40%;
+            /* 设置宽度为70% */
         }
-        
+
         .upload-btn:hover {
             background-color: #45a049;
             transform: translateY(-1px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
         }
-        
+
+        .query-report {
+            display: inline-block;
+            width: 40%;
+            /* 设置宽度为70% */
+            /* margin-top: 20px; */
+            /* padding: 12px 24px; */
+            background-color: #4c6baf;
+            /* 设置为与选择报告相同的绿色 */
+            color: white;
+            /* 字体颜色为白色 */
+            border-radius: 8px;
+            /* 圆角 */
+            border: none;
+            cursor: pointer;
+            /* 鼠标悬停时显示为手型 */
+            font-size: 16px;
+            /* 字体大小 */
+            transition: all 0.3s ease;
+            /* 背景颜色过渡效果 */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            /* 添加阴影效果 */
+        }
+
+        .query-report:hover {
+            background-color: #4d1eab;
+            /* 悬停时变为稍微深一点的绿色 */
+            transform: translateY(-1px);
+            /* 悬停时上移 */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+            /* 悬停时阴影效果 */
+        }
+
+        .report-container {
+            display: none;
+            max-height: 70vh;
+            overflow-y: auto;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+            text-align: left;
+            margin-top: 20px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            line-height: 1.5;
+            color: #333;
+            position: relative; /* 添加相对定位 */
+        }
+
+        /* 新增样式，使下拉列表固定在顶部 */
+        #queryTypeSelect,
+        #reportTimeSelect {
+            position: sticky;
+            top: 0; /* 固定在顶部 */
+            background-color: #f8f9fa; /* 背景颜色与 report-container 一致 */
+            z-index: 1; /* 确保在其他内容之上 */
+        }
+
         .preview-container {
             background-color: white;
             padding: 16px;
             border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
             margin-top: 16px;
             display: none;
             position: fixed;
             top: 16px;
             left: 0;
-            width: 100%; /* 确保宽度为100% */
-            max-height: 100vh; /* 设置最大高度 */
-            overflow-y: auto; /* 允许垂直滚动 */
+            width: 100%;
+            /* 确保宽度为100% */
+            max-height: 100vh;
+            /* 设置最大高度 */
+            overflow-y: auto;
+            /* 允许垂直滚动 */
             z-index: 100;
         }
 
@@ -110,36 +178,44 @@
         .action-btn.solve {
             background-color: #9C27B0;
         }
+
         .action-btn.identify {
             background-color: #FF9800;
         }
+
         .action-btn.translate {
             background-color: #4CAF50;
         }
+
         .action-btn.describe {
             background-color: #E91E63;
         }
+
         .action-btn.custom {
             background-color: #2196F3;
         }
 
         /* 为识字按钮设置显眼的颜色 */
         .action-btn.read {
-            background-color: #FF5722; /* 设置为橙色 */
+            background-color: #FF5722;
+            /* 设置为橙色 */
         }
+
         .action-btn.read:hover {
-            background-color: #E64A19; /* 悬停时变为深橙色 */
+            background-color: #E64A19;
+            /* 悬停时变为深橙色 */
         }
 
         #imagePreview {
-            max-width: 80%; /* 设置最大宽度为80% */
+            max-width: 100%;
             height: auto;
             display: none;
             border-radius: 8px;
             object-fit: contain;
             cursor: pointer;
+            min-height: 200px;
         }
-        
+
         #fileInput {
             display: none;
         }
@@ -149,22 +225,6 @@
             margin: 20px auto;
             font-size: 14px;
             color: #666;
-        }
-
-        /* 添加结果显示区域的样式 */
-        .result-container {
-            display: none;
-            margin-top: 16px;
-            padding: 16px;
-            background-color: #f8f9fa;
-            border-radius: 8px;
-            text-align: left;
-            white-space: pre-wrap;
-            font-size: 14px;
-            line-height: 1.6;
-            max-height: 400px;
-            overflow-y: auto;
-            border: 1px solid #dee2e6;
         }
 
         /* 添加全屏遮罩和加载动画样式 */
@@ -178,7 +238,8 @@
             display: none;
             justify-content: center;
             align-items: center;
-            z-index: 1000;
+            z-index: 1001;
+            /* 确保加载动画在最上层 */
         }
 
         .spinner {
@@ -191,17 +252,28 @@
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
         @media (max-width: 480px) {
             .container {
                 padding: 12px;
             }
-            
+
             .upload-btn {
-                width: 90%;
+                width: 40%;
+                max-width: 280px;
+                padding: 14px 20px;
+            }
+
+            .query-report {
+                width: 40%;
                 max-width: 280px;
                 padding: 14px 20px;
             }
@@ -231,10 +303,21 @@
             line-height: 1.25;
         }
 
-        .markdown-body h1 { font-size: 2em; }
-        .markdown-body h2 { font-size: 1.5em; }
-        .markdown-body h3 { font-size: 1.25em; }
-        .markdown-body h4 { font-size: 1em; }
+        .markdown-body h1 {
+            font-size: 2em;
+        }
+
+        .markdown-body h2 {
+            font-size: 1.5em;
+        }
+
+        .markdown-body h3 {
+            font-size: 1.25em;
+        }
+
+        .markdown-body h4 {
+            font-size: 1em;
+        }
 
         .markdown-body p {
             margin-bottom: 16px;
@@ -244,9 +327,9 @@
             padding: 0.2em 0.4em;
             margin: 0;
             font-size: 85%;
-            background-color: rgba(27,31,35,0.05);
+            background-color: rgba(27, 31, 35, 0.05);
             border-radius: 3px;
-            font-family: SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace;
+            font-family: SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace;
         }
 
         .markdown-body pre {
@@ -287,7 +370,8 @@
 
         /* 修改自定义输入框样式 */
         .custom-prompt {
-            display: none;  /* 改回 none，默认隐藏 */
+            display: none;
+            /* 改回 none，默认隐藏 */
             width: 100%;
             background-color: #f8f9fa;
             padding: 12px;
@@ -331,7 +415,8 @@
         }
 
         .parse-report {
-            background-color: #FF9800; /* 设置为醒目的橙色 */
+            background-color: #FF9800;
+            /* 设置为醒目的橙色 */
             color: white;
             border: none;
             border-radius: 8px;
@@ -342,55 +427,293 @@
         }
 
         .parse-report:hover {
-            background-color: #E68900; /* 悬停时变为深橙色 */
+            background-color: #E68900;
+            /* 悬停时变为深橙色 */
         }
 
         .parsed-report {
             display: none;
-            max-height: 300px; /* 设置最大高度 */
-            overflow-y: auto; /* 启用垂直滚动 */
+            max-height: 300px;
+            /* 设置最大高度 */
+            overflow-y: auto;
+            /* 启用垂直滚动 */
             padding: 12px;
-            background-color: #f8f9fa; /* 背景颜色 */
-            border-radius: 8px; /* 圆角 */
-            border: 1px solid #dee2e6; /* 边框 */
-            text-align: left; /* 左对齐 */
-            margin-top: 16px; /* 上边距 */
-            font-family: monospace; /* 使用等宽字体 */
-            white-space: pre-wrap; /* 保留空格和换行 */
-            line-height: 1.5; /* 行高 */
-            color: #333; /* 字体颜色 */
+            background-color: #f8f9fa;
+            /* 背景颜色 */
+            border-radius: 8px;
+            /* 圆角 */
+            border: 1px solid #dee2e6;
+            /* 边框 */
+            text-align: left;
+            /* 左对齐 */
+            margin-top: 16px;
+            /* 上边距 */
+            font-family: monospace;
+            /* 使用等宽字体 */
+            white-space: pre-wrap;
+            /* 保留空格和换行 */
+            line-height: 1.5;
+            /* 行高 */
+            color: #333;
+            /* 字体颜色 */
+        }
+
+        .login-modal {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: fixed;
+            z-index: 1000;
+            /* 确保登录框在加载动画下方 */
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background-color: #fff;
+            margin: 0;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .modal-content h2 {
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            color: #333;
+        }
+
+        .modal-content input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .button-container {
+            display: flex;
+            justify-content: space-between;
+            /* 按钮之间的间距 */
+            margin-top: 10px;
+            /* 上边距 */
+        }
+
+        .modal-content button {
+            flex: 1;
+            /* 按钮占据相同的宽度 */
+            margin: 0 5px;
+            /* 按钮之间的间距 */
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+
+        .modal-content button:hover {
+            background-color: #45a049;
+        }
+
+        .auth-btn {
+            position: absolute;
+            /* 绝对定位 */
+            top: 16px;
+            /* 距离顶部16px */
+            right: 16px;
+            /* 距离右侧16px */
+            background: none;
+            /* 去掉背景 */
+            border: none;
+            /* 去掉边框 */
+            color: #2196F3;
+            /* 设置文本颜色 */
+            font-size: 16px;
+            /* 设置字体大小 */
+            cursor: pointer;
+            /* 鼠标悬停时显示为手型 */
+            text-decoration: underline;
+            /* 添加下划线 */
+        }
+
+        .auth-btn:hover {
+            color: #1976D2;
+            /* 悬停时颜色变化 */
+        }
+
+        .action-btn.upload-report {
+            background-color: #3700ff;
+            /* 设置为醒目的橙色 */
+            color: white;
+            /* 字体颜色为白色 */
+            border: none;
+            /* 去掉边框 */
+            border-radius: 8px;
+            /* 圆角 */
+            cursor: pointer;
+            /* 鼠标悬停时显示为手型 */
+            padding: 12px;
+            /* 内边距 */
+            font-size: 16px;
+            /* 字体大小 */
+            transition: background-color 0.3s ease;
+            /* 背景颜色过渡效果 */
+        }
+
+        .action-btn.upload-report:hover {
+            background-color: #4900e6;
+            /* 悬停时变为深橙色 */
+        }
+
+
+
+        .action-btn.add-report {
+            background-color: #FF5722;
+            /* 设置为醒目的橙色 */
+            color: white;
+            /* 字体颜色为白色 */
+            border: none;
+            /* 去掉边框 */
+            border-radius: 8px;
+            /* 圆角 */
+            cursor: pointer;
+            /* 鼠标悬停时显示为手型 */
+            padding: 12px;
+            /* 内边距 */
+            font-size: 16px;
+            /* 字体大小 */
+            transition: background-color 0.3s ease;
+            /* 背景颜色过渡效果 */
+        }
+
+        .action-btn.add-report:hover {
+            background-color: #E64A19;
+            /* 悬停时变为深橙色 */
+        }
+
+        /* 美化下拉列表 */
+        #reportTimeSelect {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 16px;
+            margin-top: 10px;
+            background-color: #f8f9fa;
+            cursor: pointer;
+            transition: border-color 0.3s ease;
+        }
+
+        #reportTimeSelect:hover {
+            border-color: #4CAF50;
+            /* 悬停时边框颜色 */
+        }
+
+        #reportTimeSelect:focus {
+            outline: none;
+            border-color: #4CAF50;
+            /* 聚焦时边框颜色 */
+        }
+
+        /* 美化查询类型下拉列表 */
+        #queryTypeSelect {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 16px;
+            margin-top: 10px;
+            background-color: #f8f9fa;
+            cursor: pointer;
+            transition: border-color 0.3s ease, background-color 0.3s ease;
+        }
+
+        #queryTypeSelect:hover {
+            border-color: #4CAF50;
+            /* 悬停时边框颜色 */
+            background-color: #e9f5e9;
+            /* 悬停时背景颜色 */
+        }
+
+        #queryTypeSelect:focus {
+            outline: none;
+            border-color: #4CAF50;
+            /* 聚焦时边框颜色 */
+            background-color: #e9f5e9;
+            /* 聚焦时背景颜色 */
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@babel/polyfill/dist/polyfill.min.js"></script>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
+
 <body>
     <!-- 添加遮罩和加载动画 -->
     <div class="overlay">
         <div class="spinner"></div>
     </div>
 
-    <div class="container">
+    <div class="login-modal">
+        <div class="modal-content">
+            <h2>登录</h2>
+            <input type="text" id="email" placeholder="邮箱" required>
+            <input type="password" id="password" placeholder="密码" required>
+            <div class="button-container">
+                <button id="loginButton">登录</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container" style="display: none;">
+        <input type="file" id="fileInput" accept="image/*" style="display: none;">
         <div class="upload-container">
             <label for="fileInput" class="upload-btn">
-                选择图片
+                录入报告
             </label>
+            <label class="query-report">查询报告</label>
+
         </div>
-        <input type="file" id="fileInput" accept="image/*">
+        <div class="report-container" style="display: none;">
+            <select id="queryTypeSelect"></select>
+            <!-- 报告时间下拉列表 -->
+            <select id="reportTimeSelect" style="display: none;">
+                <!-- 这里可以添加更多的报告时间选项 -->
+            </select>
+            <!-- 这里可以添加其他内容 -->
+        </div>
         <div class="preview-container" style="display: none;">
             <div class="loading">正在加载图片...</div>
             <div class="image-container">
                 <img id="imagePreview" alt="图片预览" style="display: none;">
             </div>
-            <div class="result-container"></div>
-            <!-- 添加解析报告按钮 -->
             <button class="action-btn parse-report" style="display: none;">解析报告</button>
+            <button class="action-btn add-report" style="display: none;">存储数据</button>
+            <button class="action-btn upload-report" style="display: none;">上传数据</button>
             <div class="parsed-report" style="display: none;"></div>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script> -->
+
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
+        const supabaseUrl = 'https://faqeootsprjlssgmuzyq.supabase.co'; // 替换为你的 Supabase URL
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhcWVvb3RzcHJqbHNzZ211enlxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzc2MDYzNDAsImV4cCI6MjA1MzE4MjM0MH0.y7Sldz60c-pnMLtR-LF8BCv297xe_EeTNIPWDBa7mec'; // 替换为你的 Supabase 匿名密钥
+        const supabase = createClient(supabaseUrl, supabaseKey);
+
         MathJax = {
             tex: {
                 inlineMath: [['$', '$'], ['\\(', '\\)']],
@@ -408,10 +731,13 @@
         const fileInput = document.getElementById('fileInput');
         const imagePreview = document.getElementById('imagePreview');
         const loading = document.querySelector('.loading');
-        const resultContainer = document.querySelector('.result-container');
+        const reportContainer = document.querySelector('.report-container');
+
         const overlay = document.querySelector('.overlay');
         const parseReportButton = document.querySelector('.parse-report');
         const parsedReportContainer = document.querySelector('.parsed-report');
+        const loginModal = document.querySelector('.login-modal');
+        const loginButton = document.getElementById('loginButton');
 
         // 添加API配置
         const API_KEY = '8f60f0afcc894298a2ecc6ad75a4865f.BjULWUBcMIjFuFu8';
@@ -494,7 +820,7 @@
         }
 
         // 解析报告按钮点击事件
-        parseReportButton.addEventListener('click', async function() {
+        parseReportButton.addEventListener('click', async function () {
             const file = fileInput.files[0];
             if (!file) {
                 alert('请先选择图片！');
@@ -504,7 +830,8 @@
             try {
                 showLoading();
                 const base64Image = await getBase64(file);
-                const prompt = '请识别图片中的医学报告，并将所有的检查项目和数值通过json格式返回，请确保返回正常的json格式。';
+                const prompt = "请识别图片中的医学报告，提取所有检查项目以及对应的数值，并以 JSON 格式返回，格式参考：'白细胞': { '结果': '4.48', '参考范围': '3.50-9.50', '单位': '10^9/L' }。保留报告中的原始文字语言，\
+                不要包含表格的列标题，不要翻译内容，确保返回标准的 JSON 格式。另外请注意，如果图片底部包含'报告时间'，也请将报告时间提取出来，并放到返回内容的最前面；如果图片底部没有'报告时间'，请不要在返回结果中添加报告时间，格式参考：'报告时间': '2024-01-01'。";
 
                 const result = await callGLM4V(base64Image, prompt);
                 console.log('API返回结果:', result);
@@ -512,20 +839,187 @@
                 // 清理返回的内容，移除多余的反引号
                 const cleanedResult = result.replace(/```json|```/g, '').trim();
 
+                // 尝试解析 JSON 数据
+                const parsedData = JSON.parse(cleanedResult);
+
                 // 显示返回的内容
-                parsedReportContainer.textContent = JSON.stringify(JSON.parse(cleanedResult), null, 2); // 格式化JSON内容
+                parsedReportContainer.textContent = JSON.stringify(parsedData, null, 2); // 格式化JSON内容
                 parsedReportContainer.style.display = 'block';
+
+                // 只有在成功解析 JSON 数据后才显示添加报告和上传报告按钮
+                if (parsedData) {
+                    document.querySelector('.add-report').style.display = 'block'; // 显示添加报告按钮
+                    document.querySelector('.upload-report').style.display = 'block'; // 显示上传报告按钮
+                } else {
+                    document.querySelector('.add-report').style.display = 'none'; // 隐藏添加报告按钮
+                    document.querySelector('.upload-report').style.display = 'none'; // 隐藏上传按钮
+                }
             } catch (error) {
                 console.error('处理失败:', error);
                 alert('处理失败，请重试！');
                 parsedReportContainer.style.display = 'none';
+                document.querySelector('.upload-report').style.display = 'none'; // 隐藏上传按钮
             } finally {
                 hideLoading();
             }
         });
 
+        // 查询报告按钮点击事件
+        document.querySelector('.query-report').addEventListener('click', async function () {
+            try {
+                // 显示加载动画
+                showLoading();
+
+                // 获取当前用户的邮箱
+                const userEmail = localStorage.getItem('email');
+
+                // 从 Supabase 查询用户的报告
+                const { data, error } = await supabase
+                    .from('medical_reports')
+                    .select('*')
+                    .eq('user_email', userEmail);
+
+                if (error) {
+                    throw error;
+                }
+                reportContainer.style.display = 'block'; // 显示结果区域
+                reportContainer.innerHTML = ''; // 清空之前的内容
+
+                if (data.length > 0) {
+                    // 创建查询类型下拉菜单
+                    const queryTypeSelect = document.createElement('select');
+                    queryTypeSelect.id = 'queryTypeSelect';
+                    const option1 = document.createElement('option');
+                    option1.text = '选择查询类型';
+                    option1.value = '';
+                    const option2 = document.createElement('option');
+                    option2.text = '报告时间';
+                    option2.value = 'report_time';
+                    const option3 = document.createElement('option');
+                    option3.text = '异常指标';
+                    option3.value = 'abnormal';
+                    const option4 = document.createElement('option');
+                    option4.text = '特定指标';
+                    option4.value = 'specific';
+                    queryTypeSelect.appendChild(option1);
+                    queryTypeSelect.appendChild(option2);
+                    queryTypeSelect.appendChild(option3);
+                    queryTypeSelect.appendChild(option4);
+                    reportContainer.appendChild(queryTypeSelect);
+
+                    // 添加事件监听器以处理查询类型选择
+                    queryTypeSelect.addEventListener('change', function () {
+                        const selectedType = queryTypeSelect.value;
+                        const existingReportTimeSelect = document.getElementById('reportTimeSelect');
+                        const reportContent = document.getElementById('reportContent');
+
+                        if (selectedType === 'report_time') {
+                            // 检查是否已经存在报告时间下拉菜单
+                            if (!existingReportTimeSelect) {
+                                // 创建报告时间下拉菜单
+                                const reportTimeSelect = document.createElement('select');
+                                reportTimeSelect.id = 'reportTimeSelect';
+                                const defaultOption = document.createElement('option');
+                                defaultOption.text = '选择报告时间';
+                                defaultOption.value = '';
+                                reportTimeSelect.appendChild(defaultOption);
+
+                                // 添加每个 report_time 到下拉菜单
+                                data.forEach(report => {
+                                    const option = document.createElement('option');
+                                    option.text = report.report_time; // 显示报告时间
+                                    option.value = report.report_data; // 存储对应的报告数据
+                                    reportTimeSelect.appendChild(option);
+                                });
+
+                                reportContainer.appendChild(reportTimeSelect);
+
+                                // 清空报告内容展示区
+                                const reportContent = document.createElement('div');
+                                reportContent.id = 'reportContent';
+                                reportContainer.appendChild(reportContent);
+
+                                // 添加事件监听器以显示选中的报告内容
+                                reportTimeSelect.addEventListener('change', function () {
+                                    const selectedReportData = reportTimeSelect.value;
+                                    if (selectedReportData) {
+                                        const formattedData = JSON.stringify(JSON.parse(selectedReportData), null, 2); // 格式化为可读的 JSON
+                                        reportContent.innerHTML = `<pre>${formattedData}</pre>`; // 显示选中的报告内容
+                                    } else {
+                                        reportContent.innerHTML = ''; // 清空内容
+                                    }
+                                });
+                            }
+                        } else {
+                            // 如果选择的不是报告时间，移除报告时间下拉菜单和报告内容
+                            if (existingReportTimeSelect) {
+                                reportContainer.removeChild(existingReportTimeSelect);
+                            }
+                            reportContent.innerHTML = ''; // 清空报告内容
+                        }
+                    });
+                } else {
+                    reportContainer.textContent = '没有找到相关报告。';
+                }
+            } catch (error) {
+                console.error('查询失败:', error);
+                alert('查询失败，请重试！');
+            } finally {
+                // 隐藏加载动画
+                hideLoading();
+            }
+        });
+
+        // 上传报告按钮点击事件
+        document.querySelector('.upload-report').addEventListener('click', async function () {
+            try {
+                // 显示加载动画
+                showLoading();
+
+                // 获取当前用户的邮箱
+                const userEmail = localStorage.getItem('email');
+
+                // 从缓存中读取报告时间，如果没有则使用当前时间
+                let reportTime = localStorage.getItem('reportTime');
+                if (!reportTime) {
+                    const now = new Date();
+                    reportTime = now.toISOString(); // 获取当前时间的 ISO 格式
+                }
+
+                // 从缓存中读取 reports
+                const reports = JSON.parse(localStorage.getItem('reports')) || [];
+
+                // 将报告数据写入 Supabase 数据库
+                const reportsString = JSON.stringify(reports); // 将 reports 转换为字符串
+                const { data, error } = await supabase
+                    .from('medical_reports')
+                    .insert([{
+                        user_email: userEmail,
+                        report_time: reportTime,
+                        report_data: reportsString // 将整个报告数据作为字符串存储
+                    }]);
+
+                if (error) {
+                    throw error;
+                }
+
+                console.log('报告已成功上传:', data);
+                alert('报告上传成功！');
+
+                // 清空缓存中的 reports 和 reportTime 字段
+                localStorage.removeItem('reports');
+                localStorage.removeItem('reportTime');
+            } catch (error) {
+                console.error('上传失败:', error);
+                alert('上传失败，请重试！');
+            } finally {
+                // 隐藏加载动画
+                hideLoading();
+            }
+        });
+
         // 更新文件输入事件，显示解析报告按钮
-        fileInput.addEventListener('change', function(e) {
+        fileInput.addEventListener('change', function (e) {
             const file = e.target.files[0];
             if (file) {
                 if (!file.type.startsWith('image/')) {
@@ -535,15 +1029,24 @@
 
                 showLoading();
                 const reader = new FileReader();
-                reader.onload = function(e) {
+                reader.onload = function (e) {
                     hideLoading();
                     imagePreview.style.display = 'block';
                     imagePreview.src = e.target.result;
                     document.querySelector('.preview-container').style.display = 'block';
                     parseReportButton.style.display = 'block'; // 显示解析报告按钮
+
+                    // 清空 parsedReportContainer 的内容
+                    parsedReportContainer.innerHTML = ''; // 清空之前的内容
+
+                    // 隐藏选择图片按钮
+                    document.querySelector('.upload-btn').style.display = 'none'; // 隐藏选择图片按钮
+
+                    // 隐藏查询报告按钮
+                    document.querySelector('.query-report').style.display = 'none'; // 隐藏查询报告按钮
                 };
-                
-                reader.onerror = function() {
+
+                reader.onerror = function () {
                     hideLoading();
                     alert('图片加载失败，请重试！');
                 };
@@ -553,9 +1056,105 @@
         });
 
         // 添加图片点击事件
-        imagePreview.addEventListener('click', function() {
+        imagePreview.addEventListener('click', function () {
+            // 清空 parsedReportContainer 的内容
+            parsedReportContainer.innerHTML = ''; // 清空之前的内容
             fileInput.click();
+        });
+
+        // 页面加载时填充输入框
+        window.onload = function () {
+            const storedEmail = localStorage.getItem('email');
+            const storedPassword = localStorage.getItem('password');
+
+            if (storedEmail) {
+                document.getElementById('email').value = storedEmail;
+            }
+            if (storedPassword) {
+                document.getElementById('password').value = storedPassword;
+            }
+        }
+
+        // 登录按钮点击事件
+        loginButton.onclick = async function () {
+            // 确保在点击时获取最新的输入框值
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value.trim();
+
+            // 显示加载动画
+            showLoading();
+
+            // 调用 Supabase 的 Auth 接口进行登录
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email: email,
+                password: password,
+            });
+
+            // 隐藏加载动画
+            hideLoading();
+
+            if (error) {
+                alert('登录失败: ' + error.message); // 弹出提示框
+            } else {
+                // 存储邮箱和密码到 localStorage
+                localStorage.setItem('email', email);
+                localStorage.setItem('password', password);
+
+                // alert('登录成功！');
+                loginModal.style.display = 'none'; // 关闭登录框
+                document.querySelector('.container').style.display = 'block'; // 显示选择图片的逻辑
+            }
+        }
+
+        // 添加报告按钮点击事件
+        document.querySelector('.add-report').addEventListener('click', function () {
+            const existingReports = JSON.parse(localStorage.getItem('reports')) || [];
+            const reportTime = localStorage.getItem('reportTime') || '';
+            const newReportText = parsedReportContainer.textContent;
+            // console.log(newReportText);
+            // 确保 newReportText 是有效的 JSON 字符串
+            let newReport;
+            try {
+                newReport = JSON.parse(newReportText);
+            } catch (error) {
+                alert('添加报告内容失败，请检查内容格式！');
+                return;
+            }
+
+            // 合并报告
+            const mergedReports = [...existingReports];
+
+            // 遍历新报告中的每个检查项
+            for (const [key, value] of Object.entries(newReport)) {
+                // 如果新报告中包含报告时间，则添加到缓存
+
+                const existingItemIndex = mergedReports.findIndex(existingItem => {
+                    return existingItem[key] !== undefined; // 判断是否存在与key值重复的项
+                });
+                if (key === '报告时间') {
+                    localStorage.setItem('reportTime', value);
+                } else {
+                    const reportItem = {
+                        [key]: {
+                            "结果": value.结果,
+                            "参考范围": value.参考范围,
+                            "单位": value.单位
+                        }
+                    };
+                    if (existingItemIndex > -1) {
+                        // 如果存在，覆盖重复内容
+                        mergedReports[existingItemIndex] = reportItem;
+                    } else {
+                        // 如果不存在，添加新内容
+                        mergedReports.push(reportItem);
+                    }
+                }
+            }
+            // 保存合并后的报告到缓存
+            localStorage.setItem('reports', JSON.stringify(mergedReports));
+            alert('报告已成功添加到缓存！');
         });
     </script>
 </body>
-</html> 
+
+</html>
