@@ -102,7 +102,7 @@
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        model: 'glm-4v-plus-0111',
+                        model: 'glm-4v-plus',
                         messages: [{
                             role: 'user',
                             content: [
@@ -161,8 +161,8 @@
             try {
                 showLoading();
                 const base64Image = await getBase64(file);
-                const prompt = "请识别图片中的医学报告，提取所有检查项目以及对应的数值，并以 JSON 格式返回，格式参考：'白细胞': { '结果': '4.48', '参考范围': '3.50-9.50', '单位': '10^9/L' }。保留报告中的原始文字语言，\
-                不要包含表格的列标题，不要翻译内容，确保返回标准的 JSON 格式。另外请注意，如果图片底部包含'报告时间'，也请将报告时间提取出来，并放到返回内容的最前面；如果图片底部没有'报告时间'，请不要在返回结果中添加报告时间，格式参考：'报告时间': '2024-01-01'。";
+                const prompt = "请识别图片中的医学报告，提取所有检查项目以及对应的数值，并以 JSON 格式返回，格式参考：'白细胞': { '结果': '4.48', '参考范围': '3.50-9.50', '单位': '10^9/L' }。请严格按照事实就是的原则，不要胡编乱造、无中生有，并保留报告中的原始文字语言，\
+                不要包含表格的列标题，不要翻译内容，确保返回标准的 JSON 格式。外请注意，如果图片底部包含'报告时间'，也请将报告时间提取出来，并放到返回内容的最前面；如果图片底部没有'报告时间'，请不要在返回结果中添加报告时间，格式参考：'报告时间': '2024-01-01'。如果图片中只有报告时间，就请只返回一个报告时间。另";
 
                 const result = await callGLM4V(base64Image, prompt);
                 console.log('API返回结果:', result);
@@ -327,7 +327,7 @@
                                     // 添加每个 report_time 到下拉菜单
                                     sortedData.forEach(report => {
                                         const option = document.createElement('option');
-                                        const formattedDate = new Date(report.report_time).toLocaleDateString('zh-CN');
+                                        const formattedDate = formatDateTime(report.report_time);
                                         option.text = formattedDate;
                                         option.value = report.report_data;
                                         reportTimeSelect.appendChild(option);
@@ -417,7 +417,7 @@
                                             // 生成展示内容
                                             let content = '';
                                             results.forEach(result => {
-                                                content += `报告时间：${result.formattedDate}\n`;
+                                                content += `报告时间：${formatDateTime(result.date)}\n`;
                                                 content += `${selectedItem}: ${JSON.stringify(result.data, null, 2)}\n\n`;
                                             });
 
@@ -440,7 +440,7 @@
                                         let abnormalResults = [];
                                         
                                         data.forEach(report => {
-                                            const reportDate = new Date(report.report_time).toLocaleDateString('zh-CN');
+                                            const reportDate = formatDateTime(report.report_time);
                                             const reportData = JSON.parse(report.report_data);
                                             
                                             reportData.forEach(item => {
@@ -585,7 +585,7 @@
                                                         
                                                         results.push({
                                                             date: new Date(report.report_time),
-                                                            formattedDate: new Date(report.report_time).toLocaleDateString('zh-CN'),
+                                                            formattedDate: formatDateTime(report.report_time),
                                                             value: parseFloat(itemData.结果),
                                                             unit: itemData.单位,
                                                             range: itemData.参考范围,
@@ -599,7 +599,10 @@
                                             results.sort((a, b) => a.date - b.date);
 
                                             // 准备图表数据
-                                            const dates = results.map(item => item.formattedDate);
+                                            const dates = results.map(item => {
+                                                const d = new Date(item.date);
+                                                return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                                            });
                                             const values = results.map(item => item.value);
                                             const range = results[0]?.range.split('-').map(num => parseFloat(num)) || [];
                                             const unit = results[0]?.unit || '';
@@ -726,20 +729,21 @@
                 let reportTime = localStorage.getItem('reportTime');
                 if (!reportTime) {
                     const now = new Date();
-                    reportTime = now.toISOString().split('T')[0]; // 只保留日期部分 YYYY-MM-DD
+                    // 修改为包含时分秒的格式
+                    reportTime = now.toISOString().slice(0, 19).replace('T', ' '); // 格式: YYYY-MM-DD HH:mm:ss
                 }
 
                 // 从缓存中读取 reports
                 const reports = JSON.parse(localStorage.getItem('reports')) || [];
 
                 // 将报告数据写入 Supabase 数据库
-                const reportsString = JSON.stringify(reports); // 将 reports 转换为字符串
+                const reportsString = JSON.stringify(reports);
                 const { data, error } = await supabase
                     .from('medical_reports')
                     .insert([{
                         user_email: userEmail,
                         report_time: reportTime,
-                        report_data: reportsString // 将整个报告数据作为字符串存储
+                        report_data: reportsString
                     }]);
 
                 if (error) {
@@ -752,6 +756,18 @@
                 // 清空缓存中的 reports 和 reportTime 字段
                 localStorage.removeItem('reports');
                 localStorage.removeItem('reportTime');
+
+                // 重置界面状态
+                document.querySelector('.preview-container').style.display = 'none';
+                document.querySelector('.upload-btn').style.display = 'block';
+                document.querySelector('.query-report').style.display = 'block';
+                document.querySelector('.upload-report').style.display = 'none';
+                document.querySelector('.parse-report').style.display = 'none';
+                imagePreview.style.display = 'none';
+                imagePreview.src = '';
+                parsedReportContainer.innerHTML = '';
+                fileInput.value = ''; // 清空文件输入
+
             } catch (error) {
                 console.error('上传失败:', error);
                 alert('上传失败，请重试！');
@@ -842,11 +858,19 @@
                 // 存储邮箱和密码到 localStorage
                 localStorage.setItem('email', email);
                 localStorage.setItem('password', password);
-
+                localStorage.removeItem('reports');
+                localStorage.removeItem('reportTime');
                 // alert('登录成功！');
                 loginModal.style.display = 'none'; // 关闭登录框
                 document.querySelector('.container').style.display = 'block'; // 显示选择图片的逻辑
             }
+        }
+
+        // 修改时间显示格式的函数
+        function formatDateTime(date) {
+            const d = new Date(date);
+            const pad = (num) => String(num).padStart(2, '0');
+            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
         }
     </script>
 </body>
