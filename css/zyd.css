@@ -39,47 +39,76 @@ body {
 /* 上传区域 */
 .upload-container {
     display: flex;
-    width: 100vw;
-    height: 20%;
-    justify-content: space-around;
+    justify-content: center;
     align-items: center;
+    gap: 40px;  /* 增加按钮之间的间距 */
+    margin: 40px 0;  /* 增加上下边距 */
+    flex-direction: row;  /* 确保水平排列 */
 }
 
-.upload-btn {
-    display: inline-block;
-    background-color: var(--primary-color);
-    color: white;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 16px;
-    transition: all 0.3s ease;
-    box-shadow: var(--shadow-sm);
-    width: 40%;
-}
-
-.upload-btn:hover {
-    background-color: var(--primary-hover);
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-md);
-}
-
+/* 统一按钮样式 */
+.upload-btn,
 .query-report {
-    display: inline-block;
-    width: 40%;
-    background-color: var(--secondary-color);
-    color: white;
-    border-radius: 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-width: 180px;  /* 增加最小宽度 */
+    height: 56px;      /* 增加高度 */
+    padding: 12px 32px;  /* 增加内边距 */
+    font-size: 18px;     /* 字体大小 */
+    font-weight: 500;    /* 字体粗细 */
+    color: #fff;
+    background-color: #409eff;
     border: none;
+    border-radius: 8px;
     cursor: pointer;
-    font-size: 16px;
     transition: all 0.3s ease;
-    box-shadow: var(--shadow-sm);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
+/* 鼠标悬停效果 */
+.upload-btn:hover,
 .query-report:hover {
-    background-color: var(--secondary-hover);
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-md);
+    background-color: #66b1ff;  /* 更亮的蓝色 */
+    transform: translateY(-2px);  /* 轻微上浮效果 */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);  /* 增强阴影 */
+}
+
+/* 鼠标点击效果 */
+.upload-btn:active,
+.query-report:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* 响应式设计 */
+@media screen and (max-width: 768px) {
+    .upload-container {
+        gap: 20px;  /* 减小按钮间距 */
+        margin: 20px 0;  /* 减小上下边距 */
+    }
+
+    .upload-btn,
+    .query-report {
+        min-width: 120px;  /* 减小最小宽度 */
+        height: 44px;      /* 减小高度 */
+        font-size: 15px;   /* 减小字体大小 */
+        padding: 8px 16px; /* 减小内边距 */
+    }
+}
+
+/* 更小屏幕的响应式设计 */
+@media screen and (max-width: 480px) {
+    .upload-container {
+        gap: 12px;  /* 进一步减小间距 */
+    }
+
+    .upload-btn,
+    .query-report {
+        min-width: 100px;  /* 进一步减小最小宽度 */
+        font-size: 14px;   /* 进一步减小字体 */
+        padding: 8px 12px; /* 减小内边距 */
+    }
 }
 
 .report-container {
