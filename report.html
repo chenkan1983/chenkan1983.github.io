@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>报告查询</title>
+    <link rel="stylesheet" href="./css/zyd.css">
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-style-0.20.1/package/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+    <!-- 添加遮罩和加载动画 -->
+    <div class="overlay">
+        <div class="spinner"></div>
+    </div>
+
+    <div class="container">
+        <input type="file" id="fileInput" accept="image/*" style="display: none;">
+        <div class="upload-container">
+            <label for="fileInput" class="upload-btn">录入报告</label>
+            <label class="query-report">查询报告</label>
+        </div>
+        <div class="report-container" style="display: none;">
+        </div>
+    </div>
+
+    <!-- 在 reportContent div 之前添加图表容器 -->
+    <div id="chartContainer" style="width: 100%; height: 300px; display: none;"></div>
+
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
+        // 初始化 Supabase 客户端
+        const supabaseUrl = 'https://faqeootsprjlssgmuzyq.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhcWVvb3RzcHJqbHNzZ211enlxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzc2MDYzNDAsImV4cCI6MjA1MzE4MjM0MH0.y7Sldz60c-pnMLtR-LF8BCv297xe_EeTNIPWDBa7mec';
+        const supabase = createClient(supabaseUrl, supabaseKey);
+
+        // 添加登录检查逻辑
+        window.onload = async function() {
+            const email = localStorage.getItem('email');
+            const password = localStorage.getItem('password');
+            
+            if (!email || !password) {
+                // 如果没有登录信息，重定向到登录页面
+                window.location.href = 'loginReport.html';
+                return;
+            }
+
+            try {
+                // 验证登录信息是否有效
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: email,
+                    password: password,
+                });
+
+                if (error) {
+                    // 如果登录信息无效，清除本地存储并重定向到登录页面
+                    localStorage.removeItem('email');
+                    localStorage.removeItem('password');
+                    window.location.href = 'loginReport.html';
+                    return;
+                }
+            } catch (error) {
+                console.error('登录验证失败:', error);
+                window.location.href = 'loginReport.html';
+                return;
+            }
+        };
+
+        const fileInput = document.getElementById('fileInput');
+        const reportContainer = document.querySelector('.report-container');
+        const overlay = document.querySelector('.overlay');
+
+        // 文件选择事件
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                if (!file.type.startsWith('image/')) {
+                    alert('请选择图片文件！');
+                    return;
+                }
+                // 存储选中的文件到 localStorage
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    localStorage.setItem('selectedImage', e.target.result);
+                    window.location.href = 'inputReport.html';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // 显示/隐藏加载动画的函数
+        function showLoading() {
+            overlay.style.display = 'flex';
+        }
+
+        function hideLoading() {
+            overlay.style.display = 'none';
+        }
+
+        // 格式化时间显示的函数
+        function formatDateTime(date) {
+            const d = new Date(date);
+            const pad = (num) => String(num).padStart(2, '0');
+            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+        }
+
+        // 查询报告按钮点击事件
+        document.querySelector('.query-report').addEventListener('click', async function () {
+            try {
+                // 显示加载动画
+                showLoading();
+
+                // 获取当前用户的邮箱
+                const userEmail = localStorage.getItem('email');
+
+                // 从 Supabase 查询用户的报告
+                const { data, error } = await supabase
+                    .from('medical_reports')
+                    .select('*')
+                    .eq('user_email', userEmail);
+
+                if (error) {
+                    throw error;
+                }
+                reportContainer.style.display = 'block'; // 显示结果区域
+                reportContainer.innerHTML = ''; // 清空之前的内容
+
+                if (data.length > 0) {
+                    // 创建查询类型下拉菜单
+                    if (reportContainer) {
+                        const queryTypeSelect = document.createElement('select');
+                        queryTypeSelect.id = 'queryTypeSelect';
+                        const option1 = document.createElement('option');
+                        option1.text = '选择操作类型';
+                        option1.value = '';
+                        const option2 = document.createElement('option');
+                        option2.text = '根据报告时间查询';
+                        option2.value = 'report_time';
+                        const option3 = document.createElement('option');
+                        option3.text = '查询所有异常指标';
+                        option3.value = 'abnormal';
+                        const option4 = document.createElement('option');
+                        option4.text = '按照指标名称查询';
+                        option4.value = 'specific';
+                        const option5 = document.createElement('option');
+                        option5.text = '按照异常指标名称查询';
+                        option5.value = 'specific_abnormal';
+                        const option6 = document.createElement('option');
+                        option6.text = '导出检查报告Excel';
+                        option6.value = 'export_excel';
+                        queryTypeSelect.appendChild(option1);
+                        queryTypeSelect.appendChild(option2);
+                        queryTypeSelect.appendChild(option3);
+                        queryTypeSelect.appendChild(option4);
+                        queryTypeSelect.appendChild(option5);
+                        queryTypeSelect.appendChild(option6);
+                        reportContainer.appendChild(queryTypeSelect);
+                    }
+
+                    // 添加事件监听器以处理查询类型选择
+                    if (queryTypeSelect) {
+                        queryTypeSelect.addEventListener('change', async function () {
+                            try {
+                                const selectedType = queryTypeSelect.value;
+                                const existingReportTimeSelect = document.getElementById('reportTimeSelect');
+                                const existingItemSelect = document.getElementById('itemSelect');
+                                const existingAbnormalItemSelect = document.getElementById('abnormalItemSelect');
+                                let reportContent = document.getElementById('reportContent');
+
+                                // 根据选择的类型设置容器高度
+                                if (selectedType === 'specific_abnormal') {
+                                    reportContainer.classList.add('specific-abnormal');
+                                } else {
+                                    reportContainer.classList.remove('specific-abnormal');
+                                }
+
+                                // 隐藏图表容器
+                                const chartContainer = document.getElementById('chartContainer');
+                                if (chartContainer) {
+                                    chartContainer.style.display = 'none';
+                                }
+
+                                if (reportContent) {
+                                    reportContent.innerHTML = ''; // 清空内容
+                                    reportContainer.removeChild(reportContent);
+                                }
+                                // 移除之前可能存在的itemSelect
+                                if (existingItemSelect && reportContainer.contains(existingItemSelect)) {
+                                    reportContainer.removeChild(existingItemSelect);
+                                }
+
+                                if (existingReportTimeSelect && reportContainer.contains(existingReportTimeSelect)) {
+                                    reportContainer.removeChild(existingReportTimeSelect);
+                                }
+                                if (existingAbnormalItemSelect && reportContainer.contains(existingAbnormalItemSelect)) {
+                                    reportContainer.removeChild(existingAbnormalItemSelect);
+                                }
+
+                                // 根据不同的查询类型执行相应的操作
+                                if (selectedType === 'report_time') {
+                                    // 创建报告时间下拉菜单
+                                    const reportTimeSelect = document.createElement('select');
+                                    reportTimeSelect.id = 'reportTimeSelect';
+                                    const defaultOption = document.createElement('option');
+                                    defaultOption.text = '选择报告时间';
+                                    defaultOption.value = '';
+                                    reportTimeSelect.appendChild(defaultOption);
+
+                                    // 按时间排序数据
+                                    const sortedData = [...data].sort((a, b) => new Date(b.report_time) - new Date(a.report_time));
+
+                                    // 添加每个 report_time 到下拉菜单
+                                    sortedData.forEach(report => {
+                                        const option = document.createElement('option');
+                                        const formattedDate = formatDateTime(report.report_time);
+                                        option.text = formattedDate;
+                                        option.value = report.report_data;
+                                        reportTimeSelect.appendChild(option);
+                                    });
+
+                                    reportContainer.appendChild(reportTimeSelect);
+
+                                    reportContent = document.createElement('div');
+                                    reportContent.id = 'reportContent';
+                                    reportContainer.appendChild(reportContent);
+
+                                    // 添加事件听器以显示选中的报告内容
+                                    reportTimeSelect.addEventListener('change', function () {
+                                        const selectedReportData = reportTimeSelect.value;
+                                        if (selectedReportData) {
+                                            const formattedData = JSON.stringify(JSON.parse(selectedReportData), null, 2);
+                                            reportContent.innerHTML = `<pre>${formattedData}</pre>`;
+                                        } else {
+                                            reportContent.innerHTML = '';
+                                        }
+                                    });
+                                }
+                                else if (selectedType === 'specific') {
+                                    // 创建新的下拉列表
+                                    const itemSelect = document.createElement('select');
+                                    itemSelect.id = 'itemSelect';
+
+                                    // 添加默认选项
+                                    const defaultOption = document.createElement('option');
+                                    defaultOption.text = '选择检查项目';
+                                    defaultOption.value = '';
+                                    itemSelect.appendChild(defaultOption);
+
+                                    // 收集所有检查项目并去重
+                                    const allItems = new Set();
+                                    data.forEach(report => {
+                                        const reportData = JSON.parse(report.report_data);
+                                        reportData.forEach(item => {
+                                            for (const key in item) {
+                                                if (item.hasOwnProperty(key)) {
+                                                    allItems.add(key);
+                                                }
+                                            }
+                                        });
+                                    });
+
+                                    // 将去重后的检查项目添加到下拉列表
+                                    allItems.forEach(item => {
+                                        const option = document.createElement('option');
+                                        option.text = item;
+                                        option.value = item;
+                                        itemSelect.appendChild(option);
+                                    });
+
+                                    reportContainer.appendChild(itemSelect);
+
+                                    reportContent = document.createElement('div');
+                                    reportContent.id = 'reportContent';
+                                    reportContainer.appendChild(reportContent);
+
+                                    // 添加事件监听器以显示选中的检查项目内容
+                                    itemSelect.addEventListener('change', function () {
+                                        const selectedItem = itemSelect.value;
+            
+                                        if (selectedItem) {
+                                            let results = [];
+                                            data.forEach(report => {
+                                                const reportData = JSON.parse(report.report_data);
+                                                reportData.forEach(item => {
+                                                    if (item[selectedItem]) {
+                                                        results.push({
+                                                            date: new Date(report.report_time),
+                                                            formattedDate: new Date(report.report_time).toLocaleDateString('zh-CN'),
+                                                            data: item[selectedItem]
+                                                        });
+                                                    }
+                                                });
+                                            });
+
+                                            // 按时间排序结果
+                                            results.sort((a, b) => b.date - a.date);
+
+                                            // 生成展示内容
+                                            let content = '';
+                                            results.forEach(result => {
+                                                content += `报告时间：${formatDateTime(result.date)}\n`;
+                                                content += `${selectedItem}: ${JSON.stringify(result.data, null, 2)}\n\n`;
+                                            });
+
+                                            reportContent.innerHTML = content ? `<pre>${content}</pre>` : '';
+                                        } else {
+                                            reportContent.innerHTML = '';
+                                        }
+                                    });
+                                }
+                                else if (selectedType === 'abnormal') {
+                                    reportContent = document.createElement('div');
+                                    reportContent.id = 'reportContent';
+                                    reportContainer.appendChild(reportContent);
+                                    
+                                    showLoading();
+                                    
+                                    try {
+                                        // 收集所有报告数据并分析异常值
+                                        let abnormalResults = [];
+                                        
+                                        data.forEach(report => {
+                                            const reportDate = formatDateTime(report.report_time);
+                                            const reportData = JSON.parse(report.report_data);
+                                            
+                                            reportData.forEach(item => {
+                                                // 遍历每个检查项
+                                                for (const [itemName, itemData] of Object.entries(item)) {
+                                                    if (itemData.结果 && itemData.参考范围) {
+                                                        // 解析参考范围
+                                                        const range = itemData.参考范围.split('-');
+                                                        if (range.length === 2) {
+                                                            const min = parseFloat(range[0]);
+                                                            const max = parseFloat(range[1]);
+                                                            const result = parseFloat(itemData.结果);
+                                                            
+                                                            // 检查是否为数值且在范围外
+                                                            if (!isNaN(result) && !isNaN(min) && !isNaN(max)) {
+                                                                if (result < min || result > max) {
+                                                                    abnormalResults.push({
+                                                                        reportTime: reportDate,
+                                                                        itemName: itemName,
+                                                                        result: itemData.结果,
+                                                                        range: itemData.参考范围,
+                                                                        unit: itemData.单位,
+                                                                        status: result < min ? '偏低' : '偏高'
+                                                                    });
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            });
+                                        });
+                                        
+                                        // 按报告时间排序
+                                        abnormalResults.sort((a, b) => new Date(b.reportTime) - new Date(a.reportTime));
+                                        
+                                        // 生成展示内容
+                                        let content = '';
+                                        let currentReportTime = '';
+                                        
+                                        abnormalResults.forEach(item => {
+                                            if (currentReportTime !== item.reportTime) {
+                                                currentReportTime = item.reportTime;
+                                                content += `\n报告时间：${item.reportTime}\n`;
+                                                content += '----------------------------------------\n';
+                                            }
+                                            content += `${item.itemName}:\n`;
+                                            content += `  结果: ${item.result} ${item.unit} (${item.status})\n`;
+                                            content += `  参考范围: ${item.range} ${item.unit}\n\n`;
+                                        });
+                                        
+                                        if (abnormalResults.length === 0) {
+                                            content = '未发现异常指标。';
+                                        }
+                                        
+                                        reportContent.innerHTML = `<pre>${content}</pre>`;
+                                        
+                                    } catch (error) {
+                                        console.error('处理异常指标时出错:', error);
+                                        alert('处理异常指标时发生错误，请重试！');
+                                    } finally {
+                                        hideLoading();
+                                    }
+                                }
+                                else if (selectedType === 'specific_abnormal') {
+                                    // 创建图表容器
+                                    const chartContainer = document.getElementById('chartContainer');
+                                    chartContainer.style.display = 'none';
+                                    
+                                    // 创建异常指标选择下拉列表
+                                    const abnormalItemSelect = document.createElement('select');
+                                    abnormalItemSelect.id = 'abnormalItemSelect';
+                                    const defaultOption = document.createElement('option');
+                                    defaultOption.text = '选择异常指标';
+                                    defaultOption.value = '';
+                                    abnormalItemSelect.appendChild(defaultOption);
+
+                                    // 收集所有异常指标
+                                    const abnormalItems = new Set();
+                                    data.forEach(report => {
+                                        const reportData = JSON.parse(report.report_data);
+                                        reportData.forEach(item => {
+                                            for (const [itemName, itemData] of Object.entries(item)) {
+                                                if (itemData.结果 && itemData.参考范围) {
+                                                    const range = itemData.参考范围.split('-');
+                                                    if (range.length === 2) {
+                                                        const min = parseFloat(range[0]);
+                                                        const max = parseFloat(range[1]);
+                                                        const result = parseFloat(itemData.结果);
+                                                        
+                                                        if (!isNaN(result) && !isNaN(min) && !isNaN(max)) {
+                                                            if (result < min || result > max) {
+                                                                abnormalItems.add(itemName);
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        });
+                                    });
+
+                                    // 将收集到的异常指标添加到下拉列表
+                                    Array.from(abnormalItems).sort().forEach(itemName => {
+                                        const option = document.createElement('option');
+                                        option.text = itemName;
+                                        option.value = itemName;
+                                        abnormalItemSelect.appendChild(option);
+                                    });
+
+                                    reportContainer.appendChild(abnormalItemSelect);
+
+                                    // 修改异常指标选择事件监听器
+                                    abnormalItemSelect.addEventListener('change', function() {
+                                        const selectedItem = abnormalItemSelect.value;
+                                        
+                                        if (selectedItem) {
+                                            let results = [];
+                                            data.forEach(report => {
+                                                const reportData = JSON.parse(report.report_data);
+                                                reportData.forEach(item => {
+                                                    if (item[selectedItem]) {
+                                                        const itemData = item[selectedItem];
+                                                        let status = '正常';
+                                                        
+                                                        // 判断是否为异常值
+                                                        if (itemData.结果 && itemData.参考范围) {
+                                                            const range = itemData.参考范围.split('-');
+                                                            if (range.length === 2) {
+                                                                const min = parseFloat(range[0]);
+                                                                const max = parseFloat(range[1]);
+                                                                const result = parseFloat(itemData.结果);
+                                                                
+                                                                if (!isNaN(result) && !isNaN(min) && !isNaN(max)) {
+                                                                    if (result < min) {
+                                                                        status = '偏低';
+                                                                    } else if (result > max) {
+                                                                        status = '偏高';
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                        
+                                                        results.push({
+                                                            date: new Date(report.report_time),
+                                                            formattedDate: formatDateTime(report.report_time),
+                                                            value: parseFloat(itemData.结果),
+                                                            unit: itemData.单位,
+                                                            range: itemData.参考范围,
+                                                            status: status
+                                                        });
+                                                    }
+                                                });
+                                            });
+
+                                            // 按时间排序结果
+                                            results.sort((a, b) => a.date - b.date);
+
+                                            // 准备图表数据
+                                            const dates = results.map(item => {
+                                                const d = new Date(item.date);
+                                                return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                                            });
+                                            const values = results.map(item => item.value);
+                                            const range = results[0]?.range.split('-').map(num => parseFloat(num)) || [];
+                                            const unit = results[0]?.unit || '';
+
+                                            // 显示图表容器
+                                            chartContainer.style.display = 'block';
+
+                                            // 初始化 ECharts 实例
+                                            const myChart = echarts.init(chartContainer);
+
+                                            // 配置图表选项
+                                            const option = {
+                                                title: {
+                                                    text: `${selectedItem}`,
+                                                    subtext: `参考范围: ${results[0]?.range} ${unit}`,
+                                                    left: 'center',
+                                                    padding: [0, 0, 20, 0]
+                                                },
+                                                grid: {
+                                                    top: 100,
+                                                    left: 50,
+                                                    right: 50,
+                                                    bottom: 100
+                                                },
+                                                tooltip: {
+                                                    trigger: 'axis',
+                                                    formatter: function(params) {
+                                                        const dataIndex = params[0].dataIndex;
+                                                        const result = results[dataIndex];
+                                                        return `日期：${result.formattedDate}<br/>
+                                                                数值：${result.value} ${unit}<br/>
+                                                                状态：${result.status}`;
+                                                    }
+                                                },
+                                                xAxis: {
+                                                    type: 'category',
+                                                    data: dates,
+                                                    axisLabel: {
+                                                        rotate: 45,
+                                                        interval: 0,
+                                                        margin: 15
+                                                    }
+                                                },
+                                                yAxis: {
+                                                    type: 'value',
+                                                    name: unit,
+                                                    axisLine: { show: true },
+                                                    splitLine: { show: true },
+                                                    markArea: range.length === 2 ? {
+                                                        itemStyle: {
+                                                            color: 'rgba(0, 255, 0, 0.1)'
+                                                        },
+                                                        data: [[{
+                                                            yAxis: range[0]
+                                                        }, {
+                                                            yAxis: range[1]
+                                                        }]]
+                                                    } : undefined
+                                                },
+                                                series: [{
+                                                    name: selectedItem,
+                                                    type: 'line',
+                                                    data: values,
+                                                    markPoint: {
+                                                        data: results.map((item, index) => ({
+                                                            value: item.value,
+                                                            coord: [index, item.value],
+                                                            itemStyle: {
+                                                                color: item.status === '正常' ? '#67C23A' : 
+                                                                       item.status === '偏高' ? '#F56C6C' : '#E6A23C'
+                                                            }
+                                                        }))
+                                                    },
+                                                    lineStyle: {
+                                                        width: 2
+                                                    },
+                                                    symbol: 'circle',
+                                                    symbolSize: 8
+                                                }]
+                                            };
+
+                                            // 使用配置项显示图表
+                                            myChart.setOption(option);
+
+                                            // 监听窗口大小变化，调整图表大小
+                                            window.addEventListener('resize', function() {
+                                                myChart.resize();
+                                            });
+                                        } else {
+                                            chartContainer.style.display = 'none';
+                                        }
+                                    });
+                                }
+                                else if (selectedType === 'export_excel') {
+                                    showLoading();
+                                    try {
+                                        console.log('开始导出Excel...');
+                                        
+                                        // 验证 xlsx-style 是否正确加载
+                                        if (typeof XLSX === 'undefined' || typeof XLSX.utils === 'undefined') {
+                                            throw new Error('XLSX 库未正确加载，请刷新页面重试');
+                                        }
+
+                                        // 收集所有检查项目和日期
+                                        const allItems = new Set();
+                                        const reportDates = [];
+                                        const reportData = {};
+
+                                        // 按时间排序数据
+                                        const sortedData = [...data].sort((a, b) => new Date(a.report_time) - new Date(b.report_time));
+
+                                        // 收集所有检查项目和日期
+                                        sortedData.forEach(report => {
+                                            try {
+                                                const reportTime = formatDateTime(report.report_time);
+                                                reportDates.push(reportTime);
+                                                
+                                                const parsedData = typeof report.report_data === 'string' 
+                                                    ? JSON.parse(report.report_data) 
+                                                    : report.report_data;
+                                                
+                                                if (!Array.isArray(parsedData)) {
+                                                    console.error('报告数据格式错误:', parsedData);
+                                                    return;
+                                                }
+
+                                                parsedData.forEach(item => {
+                                                    if (typeof item !== 'object') {
+                                                        console.error('检查项目格式错误:', item);
+                                                        return;
+                                                    }
+
+                                                    for (const [itemName, itemData] of Object.entries(item)) {
+                                                        if (itemName === '报告时间') continue;
+                                                        
+                                                        allItems.add(itemName);
+                                                        if (!reportData[itemName]) {
+                                                            reportData[itemName] = {
+                                                                参考范围: itemData.参考范围 || '',
+                                                                结果: {}
+                                                            };
+                                                        }
+                                                        
+                                                        const resultValue = itemData.结果 !== undefined && itemData.结果 !== null ? parseFloat(itemData.结果) : 'N/A';
+                                                        reportData[itemName].结果[reportTime] = resultValue;
+                                                    }
+                                                });
+                                            } catch (parseError) {
+                                                console.error('处理报告数据时出错:', parseError);
+                                            }
+                                        });
+
+                                        if (reportDates.length === 0 || allItems.size === 0) {
+                                            throw new Error('没有找到有效的报告数据');
+                                        }
+
+                                        // 创建Excel工作表数据
+                                        const wsData = [];
+                                        
+                                        // 构建表头
+                                        const header = ['检查项目', '参考范围', ...reportDates];
+                                        wsData.push(header);
+
+                                        // 添加数据行
+                                        Array.from(allItems).forEach(item => {
+                                            const row = [item, reportData[item].参考范围];
+                                            reportDates.forEach(date => {
+                                                const result = reportData[item].结果[date] || 'N/A';
+                                                row.push(result);
+                                            });
+                                            wsData.push(row);
+                                        });
+
+                                        // 创建工作簿和工作表
+                                        const wb = XLSX.utils.book_new();
+                                        const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+                                        // 设置列宽
+                                        const colWidth = [];
+                                        header.forEach((col, index) => {
+                                            const width = Math.min(Math.max(col.length * 1.5, 15), 40);
+                                            colWidth[index] = { wch: width };
+                                        });
+                                        ws['!cols'] = colWidth;
+
+                                        // 设置单元格样式
+                                        Array.from(allItems).forEach((item, itemIndex) => {
+                                            reportDates.forEach((date, dateIndex) => {
+                                                const itemData = reportData[item];
+                                                const result = itemData.结果[date];
+                                                const cellAddress = XLSX.utils.encode_cell({ 
+                                                    r: itemIndex + 1,
+                                                    c: dateIndex + 2
+                                                });
+                                                
+                                                if (!ws[cellAddress]) {
+                                                    ws[cellAddress] = { t: 's' };
+                                                }
+
+                                                if (result === 'N/A' || result === undefined || result === null || isNaN(result)) {
+                                                    ws[cellAddress].t = 's';
+                                                    ws[cellAddress].v = 'N/A';
+                                                } else {
+                                                    try {
+                                                        const [minStr, maxStr] = (itemData.参考范围 || '-').split('-');
+                                                        const min = parseFloat(minStr);
+                                                        const max = parseFloat(maxStr);
+                                                        
+                                                        const numericResult = parseFloat(result);
+                                                        ws[cellAddress].t = 's';
+                                                        if (!isNaN(numericResult)) {                                                         
+                                                            ws[cellAddress].v = numericResult;
+                                                            
+                                                            if (!isNaN(min) && !isNaN(max)) {
+                                                                if (numericResult < min) {
+                                                                    ws[cellAddress].v = `${numericResult} ↓`;
+                                                                } else if (numericResult > max) {                                                          
+                                                                    ws[cellAddress].v = `${numericResult} ↑`;
+                                                                }
+                                                            }
+                                                        } else {
+                                                            ws[cellAddress].v = String(result);
+                                                        }
+                                                    } catch (error) {
+                                                        console.warn(`处理单元格 ${cellAddress} 时出错:`, error);
+                                                        ws[cellAddress].v = String(result);
+                                                    }
+                                                }
+                                            });
+                                        });
+
+                                        // 将工作表添加到工作簿
+                                        XLSX.utils.book_append_sheet(wb, ws, "检查报告");
+
+                                        // 生成Excel文件并下载
+                                        const fileName = 'report_data_export.xlsx';
+                                        XLSX.writeFile(wb, fileName);
+                                        console.log('Excel文件生成完成');
+
+                                    } catch (error) {
+                                        console.error('导出Excel失败:', error);
+                                        alert('导出Excel失败: ' + error.message);
+                                    } finally {
+                                        hideLoading();
+                                    }
+                                }
+                            } catch (error) {
+                                console.error('处理查询类型选择时出错:', error);
+                                alert('处理查询类型时发生错误，请重试！');
+                            }
+                        });
+                    }
+                } else {
+                    reportContainer.textContent = '没有找到相关报告。';
+                }
+            } catch (error) {
+                console.error('查询失败:', error);
+                alert('查询失败，请重试！');
+            } finally {
+                // 隐藏加载动画
+                hideLoading();
+            }
+        });
+    </script>
+</body>
+</html> 

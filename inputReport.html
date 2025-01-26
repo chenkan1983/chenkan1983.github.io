@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>录入报告</title>
+    <link rel="stylesheet" href="./css/zyd.css">
+</head>
+<body>
+    <!-- 添加遮罩和加载动画 -->
+    <div class="overlay">
+        <div class="spinner"></div>
+    </div>
+
+    <div class="preview-container">
+        <div class="loading">正在加载图片...</div>
+        <div class="image-container">
+            <img id="imagePreview" alt="图片预览">
+        </div>
+        <div class="button-group">
+            <button class="action-btn parse-report">解析报告</button>
+            <button class="action-btn upload-report" style="display: none;">上传数据</button>
+        </div>
+        <div class="parsed-report" style="display: none;"></div>
+    </div>
+
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
+        const supabaseUrl = 'https://faqeootsprjlssgmuzyq.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhcWVvb3RzcHJqbHNzZ211enlxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzc2MDYzNDAsImV4cCI6MjA1MzE4MjM0MH0.y7Sldz60c-pnMLtR-LF8BCv297xe_EeTNIPWDBa7mec';
+        const supabase = createClient(supabaseUrl, supabaseKey);
+
+        // 添加API配置
+        const API_KEY = '8f60f0afcc894298a2ecc6ad75a4865f.BjULWUBcMIjFuFu8';
+        const API_URL = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
+
+        // 检查登录状态
+        window.onload = function() {
+            const email = localStorage.getItem('email');
+            if (!email) {
+                window.location.href = 'loginReport.html';
+                return;
+            }
+            
+            // 加载选中的图片
+            const selectedImage = localStorage.getItem('selectedImage');
+            if (selectedImage) {
+                const imagePreview = document.getElementById('imagePreview');
+                imagePreview.src = selectedImage;
+                imagePreview.style.display = 'block';
+            } else {
+                window.location.href = 'report.html';
+            }
+        }
+
+        // 将图片转换为base64
+        function getBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => {
+                    const base64String = reader.result.split(',')[1];
+                    resolve(base64String);
+                };
+                reader.onerror = error => reject(error);
+            });
+        }
+
+        // 调用智谱AI的API
+        async function callGLM4V(base64Image, prompt) {
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${API_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        model: 'glm-4v-plus',
+                        messages: [{
+                            role: 'user',
+                            content: [
+                                {
+                                    type: 'text',
+                                    text: prompt
+                                },
+                                {
+                                    type: 'image_url',
+                                    image_url: {
+                                        url: `data:image/jpeg;base64,${base64Image}`
+                                    }
+                                }
+                            ]
+                        }]
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                return data.choices[0].message.content;
+            } catch (error) {
+                console.error('API调用失败:', error);
+                throw error;
+            }
+        }
+
+        // 显示/隐藏加载动画
+        const overlay = document.querySelector('.overlay');
+        function showLoading() {
+            overlay.style.display = 'flex';
+        }
+
+        function hideLoading() {
+            overlay.style.display = 'none';
+        }
+
+        // 解析报告按钮点击事件
+        const parseReportButton = document.querySelector('.parse-report');
+        const parsedReportContainer = document.querySelector('.parsed-report');
+
+        parseReportButton.addEventListener('click', async function() {
+            const selectedImage = localStorage.getItem('selectedImage');
+            if (!selectedImage) {
+                alert('请先选择图片！');
+                return;
+            }
+
+            try {
+                showLoading();
+                // 将 base64 图片数据转换为 Blob
+                const response = await fetch(selectedImage);
+                const blob = await response.blob();
+                const base64Image = await getBase64(blob);
+
+                const prompt = "请识别图片中的医学报告，提取所有检查项目以及对应的数值，并以 JSON 格式返回，格式参考：'白细胞': { '结果': '4.48', '参考范围': '3.50-9.50', '单位': '10^9/L' }。请严格按照事实就是的原则，不要胡编乱造、无中生有，并保留报告中的原始文字语言，不要包含表格的列标题，不要翻译内容，确保返回标准的 JSON 格式。如果图片底部包含'报告时间'，也请将报告时间提取出来，并放到返回内容的最前面，格式参考（请不要将这个参考格式作为结果返回）：'报告时间': '2024-01-01 01:01:01'。如果没有图片底部没有报告时间，就不要返回报告时间。";
+
+                const result = await callGLM4V(base64Image, prompt);
+                console.log('API返回结果:', result);
+
+                // 清理返回的内容，移除多余的反引号
+                const cleanedResult = result.replace(/```json|```/g, '').trim();
+
+                // 尝试解析 JSON 数据
+                const parsedData = JSON.parse(cleanedResult);
+
+                // 显示返回的内容
+                parsedReportContainer.textContent = JSON.stringify(parsedData, null, 2);
+                parsedReportContainer.style.display = 'block';
+
+                // 自动将数据存入缓存
+                if (parsedData) {
+                    const existingReports = JSON.parse(localStorage.getItem('reports')) || [];
+                    const mergedReports = [...existingReports];
+
+                    // 遍历新报告中的每个检查项
+                    for (const [key, value] of Object.entries(parsedData)) {
+                        if (key === '报告时间') {
+                            localStorage.setItem('reportTime', value);
+                        } else {
+                            const reportItem = {
+                                [key]: {
+                                    "结果": value.结果,
+                                    "参考范围": value.参考范围,
+                                    "单位": value.单位
+                                }
+                            };
+                            mergedReports.push(reportItem);
+                        }
+                    }
+                    // 保存合并后的报告到缓存
+                    localStorage.setItem('reports', JSON.stringify(mergedReports));
+                    
+                    // 显示上传报告按钮
+                    document.querySelector('.upload-report').style.display = 'block';
+                    alert('报告已解析并成功存入缓存！');
+                }
+            } catch (error) {
+                console.error('处理失败:', error);
+                alert('处理失败，请重试！');
+                parsedReportContainer.style.display = 'none';
+                document.querySelector('.upload-report').style.display = 'none';
+            } finally {
+                hideLoading();
+            }
+        });
+
+        // 上传报告按钮点击事件
+        document.querySelector('.upload-report').addEventListener('click', async function() {
+            try {
+                showLoading();
+                const userEmail = localStorage.getItem('email');
+                const reportTime = localStorage.getItem('reportTime') || 
+                    new Date().toLocaleString('zh-CN', { 
+                        timeZone: 'Asia/Shanghai',
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                        hour12: false 
+                    }).replace(/\//g, '-');
+                const reports = JSON.parse(localStorage.getItem('reports')) || [];
+
+                const { error } = await supabase
+                    .from('medical_reports')
+                    .insert([{
+                        user_email: userEmail,
+                        report_time: reportTime,
+                        report_data: JSON.stringify(reports)
+                    }]);
+
+                if (error) throw error;
+
+                // 清除缓存和本地存储
+                localStorage.removeItem('selectedImage');
+                localStorage.removeItem('reports');
+                localStorage.removeItem('reportTime');
+
+                alert('报告上传成功！');
+                window.location.href = 'report.html';
+            } catch (error) {
+                console.error('上传失败:', error);
+                alert('上传失败，请重试！');
+            } finally {
+                hideLoading();
+            }
+        });
+
+        // 修改图片预览点击事件
+        const imagePreview = document.getElementById('imagePreview');
+        imagePreview.addEventListener('click', function() {
+            // 创建一个隐藏的文件输入框
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = 'image/*';
+            fileInput.style.display = 'none';
+            
+            // 添加文件选择事件处理
+            fileInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    if (!file.type.startsWith('image/')) {
+                        alert('请选择图片文件！');
+                        return;
+                    }
+
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        // 更新图片预览
+                        imagePreview.src = e.target.result;
+                        // 保存选中的图片到本地存储
+                        localStorage.setItem('selectedImage', e.target.result);
+                    };
+
+                    reader.onerror = function() {
+                        alert('图片加载失败，请重试！');
+                    };
+
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            // 触发文件选择对话框
+            fileInput.click();
+        });
+    </script>
+</body>
+</html> 

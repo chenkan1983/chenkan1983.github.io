@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录</title>
+    <link rel="stylesheet" href="./css/zyd.css">
+</head>
+<body>
+    <!-- 添加遮罩和加载动画 -->
+    <div class="overlay">
+        <div class="spinner"></div>
+    </div>
+
+    <div class="login-modal" style="background: none;">
+        <div class="modal-content">
+            <h2>登录</h2>
+            <input type="text" id="email" placeholder="邮箱" required>
+            <input type="password" id="password" placeholder="密码" required>
+            <div class="button-container">
+                <button id="loginButton">登录</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
+        const supabaseUrl = 'https://faqeootsprjlssgmuzyq.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhcWVvb3RzcHJqbHNzZ211enlxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzc2MDYzNDAsImV4cCI6MjA1MzE4MjM0MH0.y7Sldz60c-pnMLtR-LF8BCv297xe_EeTNIPWDBa7mec';
+        const supabase = createClient(supabaseUrl, supabaseKey);
+
+        const overlay = document.querySelector('.overlay');
+        const loginButton = document.getElementById('loginButton');
+
+        // 显示/隐藏加载动画的函数
+        function showLoading() {
+            overlay.style.display = 'flex';
+        }
+
+        function hideLoading() {
+            overlay.style.display = 'none';
+        }
+
+        // 页面加载时填充输入框
+        window.onload = function () {
+            const storedEmail = localStorage.getItem('email');
+            const storedPassword = localStorage.getItem('password');
+
+            if (storedEmail) {
+                document.getElementById('email').value = storedEmail;
+            }
+            if (storedPassword) {
+                document.getElementById('password').value = storedPassword;
+            }
+        }
+
+        // 登录按钮点击事件
+        loginButton.onclick = async function () {
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value.trim();
+
+            showLoading();
+
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email: email,
+                password: password,
+            });
+
+            hideLoading();
+
+            if (error) {
+                alert('登录失败: ' + error.message);
+            } else {
+                localStorage.setItem('email', email);
+                localStorage.setItem('password', password);
+                localStorage.removeItem('reports');
+                localStorage.removeItem('reportTime');
+                window.location.href = 'report.html';
+            }
+        }
+    </script>
+</body>
+</html> 
