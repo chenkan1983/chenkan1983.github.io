@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="./css/hippo.css">
+    <title>设备数据管理</title>
+</head>
+<body>
+    <!-- 添加遮罩和加载动画 -->
+    <div class="overlay">
+        <div class="spinner"></div>
+    </div>
+
+    <div class="container">
+        <div class="table-header">
+            <h2>设备列表</h2>
+            <div class="search-container">
+                <input type="text" id="ipSearch" placeholder="输入IP地址搜索..." class="search-input">
+                <button id="searchBtn" class="search-btn">搜索</button>
+                <button id="resetBtn" class="reset-btn">重置</button>
+            </div>
+            <label class="custom-file-input">
+                导入设备数据
+                <input type="file" id="fileInput" accept=".json">
+            </label>
+        </div>
+        
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>主机名称</th>
+                        <th>机柜编号</th>
+                        <th>机柜位置</th>
+                        <th>序列号</th>
+                        <th>IP地址</th>
+                    </tr>
+                </thead>
+                <tbody id="deviceTableBody">
+                    <!-- 数据将通过JavaScript动态插入 -->
+                </tbody>
+            </table>
+        </div>
+
+        <div class="pagination">
+            <button id="prevPage" disabled>上一页</button>
+            <span id="pageInfo">第 1 页</span>
+            <button id="nextPage">下一页</button>
+        </div>
+
+        <div id="status" class="status"></div>
+    </div>
+
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
+        // Supabase配置
+        const supabaseUrl = 'https://chrbvtredcnfdnvscciw.supabase.co'
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNocmJ2dHJlZGNuZmRudnNjY2l3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzc4NzkxMTEsImV4cCI6MjA1MzQ1NTExMX0.Tt18A9MFBa9fNWau4rIHAlBSbD7TSNvC-K9Hp5-Yac0'
+        const supabase = createClient(supabaseUrl, supabaseKey)
+
+        const fileInput = document.getElementById('fileInput');
+        const statusDiv = document.getElementById('status');
+        const overlay = document.querySelector('.overlay');
+        const tableBody = document.getElementById('deviceTableBody');
+        const prevPageBtn = document.getElementById('prevPage');
+        const nextPageBtn = document.getElementById('nextPage');
+        const pageInfo = document.getElementById('pageInfo');
+
+        let currentPage = 1;
+        const pageSize = 10;
+        let allDevices = []; // 存储所有设备数据
+        let filteredDevices = []; // 存储搜索过滤后的设备数据
+
+        const ipSearch = document.getElementById('ipSearch');
+        const searchBtn = document.getElementById('searchBtn');
+        const resetBtn = document.getElementById('resetBtn');
+
+        // 显示/隐藏加载动画
+        function showLoading() {
+            overlay.style.display = 'flex';
+        }
+
+        function hideLoading() {
+            overlay.style.display = 'none';
+        }
+
+        // 显示状态信息
+        function showStatus(message, isError = false) {
+            statusDiv.textContent = message;
+            statusDiv.className = 'status ' + (isError ? 'error' : 'success');
+            setTimeout(() => {
+                statusDiv.textContent = '';
+                statusDiv.className = 'status';
+            }, 3000);
+        }
+
+        // IP地址范围检查函数
+        function isIpInRange(searchIp, rangeStr) {
+            // 将IP地址转换为数字进行比较
+            function ipToNumber(ip) {
+                const parts = ip.split('.');
+                if (parts.length !== 4) return null;
+                const nums = parts.map(part => parseInt(part, 10));
+                if (nums.some(num => isNaN(num) || num < 0 || num > 255)) return null;
+                return ((nums[0] << 24) | (nums[1] << 16) | (nums[2] << 8) | nums[3]) >>> 0;
+            }
+
+            try {
+                // 解析IP范围字符串 (格式如: "10.0.2.10-89")
+                const [ipStart, endRange] = rangeStr.split('-');
+                if (!ipStart || !endRange) return false;
+
+                // 获取基础IP部分和起始数字
+                const ipParts = ipStart.split('.');
+                if (ipParts.length !== 4) return false;
+
+                // 构建范围的起始和结束IP
+                const startIp = ipStart;
+                const endIp = `${ipParts[0]}.${ipParts[1]}.${ipParts[2]}.${endRange}`;
+
+                // 转换为数字进行比较
+                const searchNum = ipToNumber(searchIp);
+                const startNum = ipToNumber(startIp);
+                const endNum = ipToNumber(endIp);
+
+                if (searchNum === null || startNum === null || endNum === null) return false;
+
+                return searchNum >= startNum && searchNum <= endNum;
+            } catch (e) {
+                console.error('IP范围检查错误:', e);
+                return false;
+            }
+        }
+
+        // 搜索函数
+        function searchDevices() {
+            const searchValue = ipSearch.value.trim();
+            
+            if (!searchValue) {
+                filteredDevices = [];
+                displayCurrentPage();
+                return;
+            }
+
+            try {
+                // 验证IP格式
+                const ipParts = searchValue.split('.');
+                if (ipParts.length !== 4) {
+                    throw new Error('请输入有效的IP地址格式 (例如: 10.0.2.15)');
+                }
+
+                const isValidIP = ipParts.every(part => {
+                    const num = parseInt(part, 10);
+                    return !isNaN(num) && num >= 0 && num <= 255;
+                });
+
+                if (!isValidIP) {
+                    throw new Error('IP地址的每个部分必须在0-255之间');
+                }
+
+                // 查找匹配的记录
+                const matchedDevice = allDevices.find(device => {
+                    const ipRange = device.ip_address;
+                    if (!ipRange) return false;
+                    return isIpInRange(searchValue, ipRange);
+                });
+
+                if (matchedDevice) {
+                    filteredDevices = [matchedDevice];
+                } else {
+                    filteredDevices = [];
+                }
+
+            } catch (error) {
+                showStatus(error.message, true);
+                return;
+            }
+
+            currentPage = 1;
+            displayCurrentPage();
+        }
+
+        // 加载设备数据
+        async function loadAllDevices() {
+            try {
+                showLoading();
+
+                const { data, error } = await supabase
+                    .from('devices')
+                    .select('*')
+                    .order('host_name', { ascending: true });
+
+                if (error) throw error;
+
+                allDevices = data;
+                filteredDevices = []; // 清空过滤结果
+                displayCurrentPage();
+
+            } catch (error) {
+                console.error('加载数据失败:', error);
+                showStatus('加载数据失败: ' + error.message, true);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // 显示当前页数据
+        function displayCurrentPage() {
+            const displayData = filteredDevices.length > 0 ? filteredDevices : 
+                (ipSearch.value.trim() ? [] : allDevices); // 如果是搜索状态且没有匹配结果，显示空列表
+            
+            // 如果是搜索结果，不进行分页
+            const pageData = filteredDevices.length > 0 ? filteredDevices : 
+                (ipSearch.value.trim() ? [] : displayData.slice(
+                    (currentPage - 1) * pageSize, 
+                    currentPage * pageSize
+                ));
+
+            // 更新表格内容
+            tableBody.innerHTML = '';
+            if (pageData.length === 0 && ipSearch.value.trim()) {
+                // 如果是搜索状态且没有数据，显示空行
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td colspan="5" style="text-align: center;">未找到匹配的记录</td>
+                `;
+                tableBody.appendChild(row);
+            } else {
+                pageData.forEach(device => {
+                    const row = document.createElement('tr');
+                    if (filteredDevices.length > 0) {
+                        row.classList.add('highlight');
+                    }
+                    row.innerHTML = `
+                        <td>${device.host_name || ''}</td>
+                        <td>${device.cabinet_id || ''}</td>
+                        <td>${device.cabinet_position || ''}</td>
+                        <td>${device.serial_number || ''}</td>
+                        <td>${device.ip_address || ''}</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            }
+
+            // 更新分页控件
+            const totalPages = Math.ceil(displayData.length / pageSize);
+            if (ipSearch.value.trim()) {
+                pageInfo.style.display = 'none';
+            } else {
+                pageInfo.style.display = 'block';
+                pageInfo.textContent = `第 ${currentPage} 页 / 共 ${totalPages} 页`;
+            }
+            
+            // 搜索结果或无数据时隐藏分页按钮
+            const hidePageButtons = ipSearch.value.trim() || displayData.length === 0;
+            prevPageBtn.style.display = hidePageButtons ? 'none' : 'block';
+            nextPageBtn.style.display = hidePageButtons ? 'none' : 'block';
+            if (!hidePageButtons) {
+                prevPageBtn.disabled = currentPage === 1;
+                nextPageBtn.disabled = currentPage === totalPages;
+            }
+        }
+
+        // 分页按钮事件处理
+        prevPageBtn.addEventListener('click', () => {
+            if (currentPage > 1) {
+                currentPage--;
+                displayCurrentPage();
+            }
+        });
+
+        nextPageBtn.addEventListener('click', () => {
+            const totalPages = Math.ceil(allDevices.length / pageSize);
+            if (currentPage < totalPages) {
+                currentPage++;
+                displayCurrentPage();
+            }
+        });
+
+        // 文件上传处理
+        fileInput.addEventListener('change', async (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            try {
+                showLoading();
+                showStatus('正在读取文件...');
+
+                const reader = new FileReader();
+                reader.onload = async (e) => {
+                    try {
+                        const jsonData = JSON.parse(e.target.result);
+                        
+                        if (!jsonData.data || !Array.isArray(jsonData.data)) {
+                            throw new Error('JSON文件格式不正确，缺少data数组');
+                        }
+
+                        // 转换导入数据格式
+                        const newDevices = jsonData.data.map(item => ({
+                            host_name: item.主机名称,
+                            cabinet_id: item.机柜编号,
+                            cabinet_position: item.机柜位置,
+                            serial_number: item.序列号,
+                            ip_address: item.主机IP地址
+                        }));
+
+                        // 过滤出需要导入的数据
+                        const devicesToImport = newDevices.filter(newDevice => {
+                            // 检查是否已存在相同的记录
+                            return !allDevices.some(existingDevice => 
+                                existingDevice.host_name === newDevice.host_name &&
+                                existingDevice.cabinet_id === newDevice.cabinet_id &&
+                                existingDevice.cabinet_position === newDevice.cabinet_position &&
+                                existingDevice.serial_number === newDevice.serial_number &&
+                                existingDevice.ip_address === newDevice.ip_address
+                            );
+                        });
+
+                        if (devicesToImport.length === 0) {
+                            showStatus('所有数据都已存在，无需导入');
+                            return;
+                        }
+
+                        showStatus(`开始导入${devicesToImport.length}条新数据...`);
+
+                        // 批量插入新数据
+                        const { data, error } = await supabase
+                            .from('devices')
+                            .upsert(devicesToImport);
+
+                        if (error) {
+                            throw error;
+                        }
+
+                        showStatus(`成功导入${devicesToImport.length}条新数据！`);
+                        fileInput.value = ''; // 清空文件输入
+                        
+                        // 重新加载所有数据
+                        await loadAllDevices();
+
+                    } catch (error) {
+                        console.error('处理数据时出错:', error);
+                        showStatus('处理数据时出错: ' + error.message, true);
+                    } finally {
+                        hideLoading();
+                    }
+                };
+
+                reader.onerror = (error) => {
+                    console.error('读取文件时出错:', error);
+                    showStatus('读取文件时出错', true);
+                    hideLoading();
+                };
+
+                reader.readAsText(file);
+
+            } catch (error) {
+                console.error('处理文件时出错:', error);
+                showStatus('处理文件时出错', true);
+                hideLoading();
+            }
+        });
+
+        // 添加搜索和重置事件监听器
+        searchBtn.addEventListener('click', searchDevices);
+        ipSearch.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                searchDevices();
+            }
+        });
+
+        resetBtn.addEventListener('click', () => {
+            ipSearch.value = '';
+            filteredDevices = [];
+            currentPage = 1;
+            pageInfo.style.display = 'block';
+            displayCurrentPage();
+            showStatus('已重置搜索结果');
+        });
+
+        // 页面加载时获取所有数据
+        loadAllDevices();
+    </script>
+</body>
+</html>
