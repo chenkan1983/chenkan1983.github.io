@@ -10,7 +10,6 @@
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
     <!-- 添加 SheetJS 库 -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
-    <script src="https://cdn.sheetjs.com/xlsx-style-0.20.1/package/dist/xlsx.full.min.js"></script>
 </head>
 
 <body>
@@ -912,12 +911,17 @@
                 const userEmail = localStorage.getItem('email');
 
                 // 从缓存中读取报告时间，如果没有则使用当前时间
-                let reportTime = localStorage.getItem('reportTime');
-                if (!reportTime) {
-                    const now = new Date();
-                    // 修改为包含时分秒的格式
-                    reportTime = now.toISOString().slice(0, 19).replace('T', ' '); // 格式: YYYY-MM-DD HH:mm:ss
-                }
+                const reportTime = localStorage.getItem('reportTime') || 
+                    new Date().toLocaleString('zh-CN', { 
+                        timeZone: 'Asia/Shanghai',
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                        hour12: false 
+                    }).replace(/\//g, '-');
 
                 // 从缓存中读取 reports
                 const reports = JSON.parse(localStorage.getItem('reports')) || [];
