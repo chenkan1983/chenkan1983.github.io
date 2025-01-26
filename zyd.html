@@ -164,9 +164,8 @@
             try {
                 showLoading();
                 const base64Image = await getBase64(file);
-                const prompt = "请识别图片中的医学报告，提取所有检查项目以及对应的数值，并以 JSON 格式返回，格式参考：'白细胞': { '结果': '4.48', '参考范围': '3.50-9.50', '单位': '10^9/L' }。请严格按照事实就是的原则，不要胡编乱造、无中生有，并保留报告中的原始文字语言，\
-                不要包含表格的列标题，不要翻译内容，确保返回标准的 JSON 格式。外请注意，如果图片底部包含'报告时间'，也请将报告时间提取出来，并放到返回内容的最前面；如果图片底部没有'报告时间'，请不要在返回结果中添加报告时间，格式参考：'报告时间': '2024-01-01'。如果图片中只有报告时间，就请只返回一个报告时间。另";
-
+                const prompt = "请识别图片中的医学报告，提取所有检查项目以及对应的数值，并以 JSON 格式返回，格式参考：'白细胞计数': { '结果': '4.48', '参考范围': '3.50-9.50', '单位': '10^9/L' }。请严格按照事实就是的原则，不要胡编乱造、无中生有，并保留报告中的原始文字语言，不要包含表格的列标题，不要翻译内容，保留完整检查项目的名字（包括括号内的部分），确保返回标准的 JSON 格式。如果图片底部包含'报告时间'，也请将报告时间提取出来，并放到返回内容的最前面，格式参考（请不要将这个参考格式作为结果返回）：'报告时间': '2024-01-01 01:01:01'。如果没有图片底部没有报告时间，就不要返回报告时间。";
+                
                 const result = await callGLM4V(base64Image, prompt);
                 console.log('API返回结果:', result);
 
@@ -192,7 +191,21 @@
                         });
                         if (key === '报告时间') {
                             localStorage.setItem('reportTime', value);
-                        } else {
+                        }
+                        else if (key === '检查项目') {
+                            const checkItems = value; // 获取检查项目
+                            for (const [itemKey, itemValue] of Object.entries(checkItems)) {
+                                const reportItem = {
+                                    [itemKey]: {
+                                        "结果": itemValue.结果,
+                                        "参考范围": itemValue.参考范围,
+                                        "单位": itemValue.单位
+                                    }
+                                };
+                                mergedReports.push(reportItem);
+                            }
+                        } 
+                        else {
                             const reportItem = {
                                 [key]: {
                                     "结果": value.结果,
