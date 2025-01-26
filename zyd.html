@@ -8,6 +8,9 @@
     <link rel="stylesheet" href="./css/zyd.css">
     <!-- 添加 ECharts 库 -->
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <!-- 添加 SheetJS 库 -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-style-0.20.1/package/dist/xlsx.full.min.js"></script>
 </head>
 
 <body>
@@ -262,11 +265,15 @@
                         const option5 = document.createElement('option');
                         option5.text = '按照异常指标名称查询';
                         option5.value = 'specific_abnormal';
+                        const option6 = document.createElement('option');
+                        option6.text = '导出检查报告Excel';
+                        option6.value = 'export_excel';
                         queryTypeSelect.appendChild(option1);
                         queryTypeSelect.appendChild(option2);
                         queryTypeSelect.appendChild(option3);
                         queryTypeSelect.appendChild(option4);
                         queryTypeSelect.appendChild(option5);
+                        queryTypeSelect.appendChild(option6);
                         reportContainer.appendChild(queryTypeSelect);
                     } else {
                         console.error('报告容器元素不存在');
@@ -698,6 +705,172 @@
                                         }
                                     });
                                 }
+
+                                else if (selectedType === 'export_excel') {
+                                    showLoading();
+                                    try {
+                                        console.log('开始导出Excel...');
+                                        
+                                        // 验证 xlsx-style 是否正确加载
+                                        if (typeof XLSX === 'undefined' || typeof XLSX.utils === 'undefined') {
+                                            throw new Error('XLSX 库未正确加载，请刷新页面重试');
+                                        }
+
+                                        // 收集所有检查项目和日期
+                                        const allItems = new Set();
+                                        const reportDates = [];
+                                        const reportData = {};
+
+                                        // 按时间排序数据
+                                        const sortedData = [...data].sort((a, b) => new Date(a.report_time) - new Date(b.report_time));
+
+                                        // 收集所有检查项目和日期
+                                        sortedData.forEach(report => {
+                                            try {
+                                                const reportTime = formatDateTime(report.report_time);
+                                                reportDates.push(reportTime);
+                                                
+                                                // 确保 report.report_data 是字符串并正确解析
+                                                const parsedData = typeof report.report_data === 'string' 
+                                                    ? JSON.parse(report.report_data) 
+                                                    : report.report_data;
+                                                
+                                                if (!Array.isArray(parsedData)) {
+                                                    console.error('报告数据格式错误:', parsedData);
+                                                    return;
+                                                }
+
+                                                parsedData.forEach(item => {
+                                                    if (typeof item !== 'object') {
+                                                        console.error('检查项目格式错误:', item);
+                                                        return;
+                                                    }
+
+                                                    for (const [itemName, itemData] of Object.entries(item)) {
+                                                        if (itemName === '报告时间') continue; // 跳过报告时间字段
+                                                        
+                                                        allItems.add(itemName);
+                                                        if (!reportData[itemName]) {
+                                                            reportData[itemName] = {
+                                                                参考范围: itemData.参考范围 || '',
+                                                                结果: {}
+                                                            };
+                                                        }
+                                                        
+                                                        // 确保结果被正确解析为数字
+                                                        const resultValue = itemData.结果 !== undefined && itemData.结果 !== null ? parseFloat(itemData.结果) : 'N/A';
+                                                        reportData[itemName].结果[reportTime] = resultValue;
+                                                    }
+                                                });
+                                            } catch (parseError) {
+                                                console.error('处理报告数据时出错:', parseError);
+                                            }
+                                        });
+
+                                        
+                                        if (reportDates.length === 0 || allItems.size === 0) {
+                                            throw new Error('没有找到有效的报告数据');
+                                        }
+
+                                        // 创建Excel工作表数据
+                                        const wsData = [];
+                                        
+                                        // 构建表头
+                                        const header = ['检查项目', '参考范围', ...reportDates];
+                                        wsData.push(header);
+
+                                        // 添加数据行
+                                        Array.from(allItems).forEach(item => {
+                                            const row = [item, reportData[item].参考范围];
+                                            reportDates.forEach(date => {
+                                                const result = reportData[item].结果[date] || 'N/A';
+                                                
+                                                row.push(result);
+                                            });
+                                            wsData.push(row);
+                                        });
+
+                                        // console.log('Excel数据准备完成:', wsData); // 添加调试日志
+
+                                        // 创建工作簿和工作表
+                                        const wb = XLSX.utils.book_new();
+                                        const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+                                        // 设置列宽
+                                        const colWidth = [];
+                                        header.forEach((col, index) => {
+                                            const width = Math.min(Math.max(col.length * 1.5, 15), 40);
+                                            colWidth[index] = { wch: width };
+                                        });
+                                        ws['!cols'] = colWidth;
+
+                                        // 设置单元格样式
+                                        Array.from(allItems).forEach((item, itemIndex) => {
+                                            reportDates.forEach((date, dateIndex) => {
+                                                const itemData = reportData[item];
+                                                const result = itemData.结果[date];
+                                                const cellAddress = XLSX.utils.encode_cell({ 
+                                                    r: itemIndex + 1,
+                                                    c: dateIndex + 2
+                                                });
+                                                
+                                                // 确保单元格存在
+                                                if (!ws[cellAddress]) {
+                                                    ws[cellAddress] = { t: 's' }; // 默认设置为字符串类型
+                                                }
+
+                                                // 处理结果值
+                                                if (result === 'N/A' || result === undefined || result === null || isNaN(result)) {
+                                                    ws[cellAddress].t = 's';
+                                                    ws[cellAddress].v = 'N/A';
+                                                } else {
+                                                    try {
+                                                        const [minStr, maxStr] = (itemData.参考范围 || '-').split('-');
+                                                        const min = parseFloat(minStr);
+                                                        const max = parseFloat(maxStr);
+                                                        
+                                                        // 确保结果是有效的数值
+                                                        const numericResult = parseFloat(result);
+                                                        ws[cellAddress].t = 's';
+                                                        if (!isNaN(numericResult)) {                                                         
+                                                            ws[cellAddress].v = numericResult;
+                                                            
+                                                            // 添加箭头标记
+                                                            if (!isNaN(min) && !isNaN(max)) {
+                                                                if (numericResult < min) {
+                                                                    ws[cellAddress].v = `${numericResult} ↓`;
+                                                                } else if (numericResult > max) {                                                          
+                                                                    ws[cellAddress].v = `${numericResult} ↑`;
+                                                                }
+                                                            }
+                                                        } else {
+                                                            ws[cellAddress].v = String(result);
+                                                        }
+                                                    } catch (error) {
+                                                        console.warn(`处理单元格 ${cellAddress} 时出错:`, error);
+                                                        ws[cellAddress].v = String(result);
+                                                    }
+                                                }
+                                            });
+                                        });
+
+                                        // 将工作表添加到工作簿
+                                        XLSX.utils.book_append_sheet(wb, ws, "检查报告");
+
+                                        // 生成Excel文件并下载
+                                        const fileName = 'report_data_export.xlsx';
+
+                                        // 使用 writeFile 方法导出文件
+                                        XLSX.writeFile(wb, fileName);
+                                        console.log('Excel文件生成完成');
+
+                                    } catch (error) {
+                                        console.error('导出Excel失败:', error);
+                                        alert('导出Excel失败: ' + error.message);
+                                    } finally {
+                                        hideLoading();
+                                    }
+                                }
                             } catch (error) {
                                 console.error('处理查询类型选择时出错:', error);
                                 alert('处理查询类型时发生错误，请重试！');
@@ -871,6 +1044,16 @@
             const d = new Date(date);
             const pad = (num) => String(num).padStart(2, '0');
             return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+        }
+
+        // 添加辅助函数：将字符串转换为ArrayBuffer
+        function s2ab(s) {
+            const buf = new ArrayBuffer(s.length);
+            const view = new Uint8Array(buf);
+            for (let i = 0; i < s.length; i++) {
+                view[i] = s.charCodeAt(i) & 0xFF;
+            }
+            return buf;
         }
     </script>
 </body>
