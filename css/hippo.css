@@ -267,6 +267,55 @@ td {
         width: 100%;
         gap: 0; /* 移除横向间距，因为我们使用margin来控制间距 */
     }
+
+    /* 调整模态框内容样式 */
+    .modal-content {
+        padding: 1rem;
+        width: 95%;
+        margin: 0.5rem;
+        max-height: 90vh; /* 限制最大高度 */
+        overflow-y: auto; /* 添加垂直滚动 */
+    }
+
+    /* 调整表单组样式 */
+    .form-group {
+        margin-bottom: 0.8rem;
+    }
+
+    /* 调整输入框样式 */
+    .form-group input,
+    .form-group textarea {
+        width: 100%;
+        padding: 0.6rem;
+        box-sizing: border-box;
+        font-size: 16px; /* 防止iOS自动放大 */
+    }
+
+    /* 调整按钮容器样式 */
+    .modal-buttons {
+        margin-top: 1rem;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    /* 调整按钮样式 */
+    .modal-buttons button {
+        width: 100%;
+        padding: 0.8rem;
+        margin: 0;
+    }
+
+    /* 调整模态框标题样式 */
+    .modal-content h3 {
+        font-size: 1.2rem;
+        margin-bottom: 1rem;
+    }
+
+    /* 优化表单标签样式 */
+    .form-group label {
+        font-size: 0.9rem;
+        margin-bottom: 0.3rem;
+    }
 }
 
 .search-container {
@@ -452,6 +501,7 @@ tr.highlight:hover {
     width: 90%;
     max-width: 500px;
     animation: modalFadeIn 0.3s ease;
+    box-sizing: border-box; /* 确保padding不会影响总宽度 */
 }
 
 .modal-content h3 {
@@ -462,6 +512,8 @@ tr.highlight:hover {
 
 .form-group {
     margin-bottom: 1rem;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .form-group label {
@@ -471,13 +523,15 @@ tr.highlight:hover {
     font-size: 0.9rem;
 }
 
-.form-group input {
+.form-group input,
+.form-group textarea {
     width: 100%;
     padding: 0.8rem;
     border: 1px solid #e2e8f0;
     border-radius: 6px;
     font-size: 1rem;
     transition: all 0.3s ease;
+    box-sizing: border-box;
 }
 
 .form-group input:focus {
