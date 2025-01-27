@@ -213,7 +213,9 @@ td {
 
     .custom-file-input {
         width: 100%;
+        box-sizing: border-box;
         text-align: center;
+        margin-top: 0.5rem;
     }
 
     th, td {
@@ -223,6 +225,47 @@ td {
     .pagination button {
         min-width: 80px;
         padding: 0.6rem 1rem;
+    }
+
+    /* 修改文件输入按钮在移动端的样式 */
+    .custom-file-input {
+        width: 100%;
+        box-sizing: border-box;
+        text-align: center;
+        margin-top: 0.5rem;
+    }
+
+    /* 调整搜索容器中所有按钮的样式 */
+    .search-container {
+        width: 100%;
+    }
+
+    .search-container > * {
+        width: 100%;
+        margin-top: 0.5rem;
+    }
+
+    /* 确保输入框和按钮有合适的间距 */
+    .search-input,
+    .search-btn,
+    .reset-btn,
+    .add-btn,
+    .custom-file-input {
+        margin: 0.5rem 0;
+    }
+
+    /* 修改搜索框在移动端的样式 */
+    .search-input {
+        width: 100%; /* 设置为全宽 */
+        max-width: none; /* 移除最大宽度限制 */
+        margin: 0.5rem 0;
+    }
+
+    /* 确保搜索容器中的所有元素垂直排列且宽度一致 */
+    .search-container {
+        flex-direction: column;
+        width: 100%;
+        gap: 0; /* 移除横向间距，因为我们使用margin来控制间距 */
     }
 }
 
@@ -238,8 +281,9 @@ td {
     border: 1px solid #e2e8f0;
     border-radius: 8px;
     font-size: 14px;
-    width: 200px;
+    width: 300px; /* 增加默认宽度 */
     transition: all 0.3s ease;
+    box-sizing: border-box; /* 确保padding不会影响总宽度 */
 }
 
 .search-input:focus {
@@ -270,31 +314,6 @@ td {
 .search-btn:hover, .reset-btn:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-}
-
-/* 响应式设计补充 */
-@media (max-width: 768px) {
-    .table-header {
-        flex-direction: column;
-        gap: 1rem;
-    }
-
-    .search-container {
-        flex-direction: column;
-        width: 100%;
-    }
-
-    .search-input {
-        flex: 1;
-    }
-
-    .search-btn, .reset-btn {
-        padding: 0.8rem 1rem;
-    }
-
-    .search-container button {
-        width: 100%;
-    }
 }
 
 /* 添加搜索结果高亮样式 */
