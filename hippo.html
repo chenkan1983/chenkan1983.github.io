@@ -16,7 +16,7 @@
         <div class="table-header">
             <h2>设备列表</h2>
             <div class="search-container">
-                <input type="text" id="ipSearch" placeholder="输入IP地址搜索..." class="search-input">
+                <input type="text" id="ipSearch" placeholder="输入IP地址/机柜编号/序列号搜索..." class="search-input">
                 <button id="searchBtn" class="search-btn">搜索</button>
                 <button id="resetBtn" class="reset-btn">重置</button>
                 <button id="addBtn" class="add-btn">新增设备</button>
@@ -175,7 +175,7 @@
             }
         }
 
-        // 搜索函数
+        // 修改搜索函数
         function searchDevices() {
             const searchValue = ipSearch.value.trim();
             
@@ -186,41 +186,130 @@
             }
 
             try {
-                // 验证IP格式
-                const ipParts = searchValue.split('.');
-                if (ipParts.length !== 4) {
-                    throw new Error('请输入有效的IP地址格式 (例如: 10.0.2.15)');
+                // 判断搜索内容的类型
+                const searchType = determineSearchType(searchValue);
+                
+                switch (searchType) {
+                    case 'ip':
+                        searchByIP(searchValue);
+                        break;
+                    case 'cabinet':
+                        searchByCabinetId(searchValue);
+                        break;
+                    case 'serial':
+                        searchBySerialNumber(searchValue);
+                        break;
+                    default:
+                        throw new Error('无法识别的搜索格式');
                 }
 
-                const isValidIP = ipParts.every(part => {
-                    const num = parseInt(part, 10);
-                    return !isNaN(num) && num >= 0 && num <= 255;
-                });
-
-                if (!isValidIP) {
-                    throw new Error('IP地址的每个部分必须在0-255之间');
-                }
-
-                // 查找匹配的记录
-                const matchedDevice = allDevices.find(device => {
-                    const ipRange = device.ip_address;
-                    if (!ipRange) return false;
-                    return isIpInRange(searchValue, ipRange);
-                });
-
-                if (matchedDevice) {
-                    filteredDevices = [matchedDevice];
-                } else {
-                    filteredDevices = [];
-                }
+                displayCurrentPage();
 
             } catch (error) {
+                console.error('搜索错误:', error);
                 showStatus(error.message, true);
-                return;
+            }
+        }
+
+        // 判断搜索类型的函数
+        function determineSearchType(value) {
+            // IP地址格式：xxx.xxx.xxx.xxx
+            const ipPattern = /^(\d{1,3}\.){3}\d{1,3}$/;
+            
+            // 机柜编号格式：dx2-8 或 lt-1-3 格式
+            const cabinetPattern = /^(dx\d+-\d+|lt-\d+-\d+)$/i;
+            
+            // 序列号格式：LJ-CAH开头，包含多个短横线分隔的部分
+            // 如：LJ-CAH1901-201907029、LJ-CAH2203-HJG-2023H1012
+            const serialPattern = /^LJ-CAH\d{4}(-[A-Z0-9]+)+$/i;
+
+            if (ipPattern.test(value)) {
+                // 进一步验证 IP 地址的有效性
+                const parts = value.split('.');
+                const isValidIP = parts.every(part => {
+                    const num = parseInt(part, 10);
+                    return num >= 0 && num <= 255;
+                });
+                if (isValidIP) return 'ip';
+            }
+            
+            // 先检查是否是机柜编号格式
+            if (value.toLowerCase().startsWith('dx') || value.toLowerCase().startsWith('lt')) {
+                if (cabinetPattern.test(value)) {
+                    return 'cabinet';
+                } else {
+                    throw new Error('机柜编号格式不正确，请使用正确的格式（如：dx2-8 或 lt-1-3）');
+                }
+            }
+            
+            // 检查是否是序列号格式
+            if (value.toUpperCase().startsWith('LJ-CAH')) {
+                if (serialPattern.test(value)) {
+                    return 'serial';
+                } else {
+                    throw new Error('序列号格式不正确，请使用正确的格式（如：LJ-CAH1901-201907029）');
+                }
             }
 
-            currentPage = 1;
-            displayCurrentPage();
+            // 根据输入特征进行错误提示
+            if (value.includes('.')) {
+                throw new Error('IP地址格式不正确，请使用正确的格式（如：192.168.1.1）');
+            } else if (value.includes('-')) {
+                if (value.toLowerCase().startsWith('lj')) {
+                    throw new Error('序列号格式不正确，请使用正确的格式（如：LJ-CAH1901-201907029）');
+                } else {
+                    throw new Error('机柜编号格式不正确，请使用正确的格式（如：dx2-8 或 lt-1-3）');
+                }
+            } else {
+                throw new Error('请输入正确的搜索格式：\nIP地址（如：192.168.1.1）\n机柜编号（如：dx2-8 或 lt-1-3）\n序列号（如：LJ-CAH1901-201907029）');
+            }
+        }
+
+        // IP地址搜索函数
+        function searchByIP(searchValue) {
+            // 查找匹配的记录
+            const matchedDevice = allDevices.find(device => {
+                const ipRange = device.ip_address;
+                if (!ipRange) return false;
+                return isIpInRange(searchValue, ipRange);
+            });
+
+            if (matchedDevice) {
+                filteredDevices = [matchedDevice];
+            } else {
+                filteredDevices = [];
+                throw new Error('未找到匹配的IP地址记录');
+            }
+        }
+
+        // 机柜编号搜索函数
+        function searchByCabinetId(searchValue) {
+            const matchedDevices = allDevices.filter(device => 
+                device.cabinet_id && 
+                device.cabinet_id.toLowerCase() === searchValue.toLowerCase()
+            );
+
+            if (matchedDevices.length > 0) {
+                filteredDevices = matchedDevices;
+            } else {
+                filteredDevices = [];
+                throw new Error('未找到匹配的机柜编号记录');
+            }
+        }
+
+        // 序列号搜索函数
+        function searchBySerialNumber(searchValue) {
+            const matchedDevices = allDevices.filter(device => 
+                device.serial_number && 
+                device.serial_number.toLowerCase() === searchValue.toLowerCase()
+            );
+
+            if (matchedDevices.length > 0) {
+                filteredDevices = matchedDevices;
+            } else {
+                filteredDevices = [];
+                throw new Error('未找到匹配的序列号记录');
+            }
         }
 
         // 加载设备数据
