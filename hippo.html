@@ -19,6 +19,7 @@
                 <input type="text" id="ipSearch" placeholder="输入IP地址搜索..." class="search-input">
                 <button id="searchBtn" class="search-btn">搜索</button>
                 <button id="resetBtn" class="reset-btn">重置</button>
+                <button id="addBtn" class="add-btn">新增设备</button>
             </div>
             <label class="custom-file-input">
                 导入设备数据
@@ -35,6 +36,8 @@
                         <th>机柜位置</th>
                         <th>序列号</th>
                         <th>IP地址</th>
+                        <th>备注</th>
+                        <th>操作</th>
                     </tr>
                 </thead>
                 <tbody id="deviceTableBody">
@@ -50,6 +53,43 @@
         </div>
 
         <div id="status" class="status"></div>
+    </div>
+
+    <!-- 在 container div 后面添加编辑模态框 -->
+    <div class="edit-modal" style="display: none;">
+        <div class="modal-content">
+            <h3>编辑设备信息</h3>
+            <form id="editForm">
+                <div class="form-group">
+                    <label for="edit_host_name">主机名称</label>
+                    <input type="text" id="edit_host_name" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit_cabinet_id">机柜编号</label>
+                    <input type="text" id="edit_cabinet_id" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit_cabinet_position">机柜位置</label>
+                    <input type="text" id="edit_cabinet_position" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit_serial_number">序列号</label>
+                    <input type="text" id="edit_serial_number" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit_ip_address">IP地址</label>
+                    <input type="text" id="edit_ip_address" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit_mark">备注</label>
+                    <textarea id="edit_mark" rows="3"></textarea>
+                </div>
+                <div class="modal-buttons">
+                    <button type="submit" class="btn-confirm">确定</button>
+                    <button type="button" class="btn-cancel">取消</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <script type="module">
@@ -76,6 +116,7 @@
         const ipSearch = document.getElementById('ipSearch');
         const searchBtn = document.getElementById('searchBtn');
         const resetBtn = document.getElementById('resetBtn');
+        const addBtn = document.getElementById('addBtn');
 
         // 显示/隐藏加载动画
         function showLoading() {
@@ -221,10 +262,9 @@
             // 更新表格内容
             tableBody.innerHTML = '';
             if (pageData.length === 0 && ipSearch.value.trim()) {
-                // 如果是搜索状态且没有数据，显示空行
                 const row = document.createElement('tr');
                 row.innerHTML = `
-                    <td colspan="5" style="text-align: center;">未找到匹配的记录</td>
+                    <td colspan="7" style="text-align: center;">未找到匹配的记录</td>
                 `;
                 tableBody.appendChild(row);
             } else {
@@ -239,8 +279,24 @@
                         <td>${device.cabinet_position || ''}</td>
                         <td>${device.serial_number || ''}</td>
                         <td>${device.ip_address || ''}</td>
+                        <td class="mark-cell">${device.mark || ''}</td>
+                        <td class="action-buttons">
+                            <button class="btn-edit" data-id="${device.id}" title="编辑">
+                                <i class="fas fa-edit"></i>编辑
+                            </button>
+                            <button class="btn-delete" data-id="${device.id}" title="删除">
+                                <i class="fas fa-trash"></i>删除
+                            </button>
+                        </td>
                     `;
                     tableBody.appendChild(row);
+                    
+                    // 添加按钮事件监听器
+                    const editBtn = row.querySelector('.btn-edit');
+                    const deleteBtn = row.querySelector('.btn-delete');
+                    
+                    editBtn.addEventListener('click', () => handleEdit(device));
+                    deleteBtn.addEventListener('click', () => handleDelete(device));
                 });
             }
 
@@ -379,6 +435,168 @@
             displayCurrentPage();
             showStatus('已重置搜索结果');
         });
+
+        // 编辑设备信息
+        async function handleEdit(device) {
+            try {
+                const editModal = document.querySelector('.edit-modal');
+                const editForm = document.getElementById('editForm');
+                const cancelBtn = editForm.querySelector('.btn-cancel');
+
+                // 填充表单数据
+                document.getElementById('edit_host_name').value = device.host_name || '';
+                document.getElementById('edit_cabinet_id').value = device.cabinet_id || '';
+                document.getElementById('edit_cabinet_position').value = device.cabinet_position || '';
+                document.getElementById('edit_serial_number').value = device.serial_number || '';
+                document.getElementById('edit_ip_address').value = device.ip_address || '';
+                document.getElementById('edit_mark').value = device.mark || '';
+
+                // 显示模态框
+                editModal.style.display = 'flex';
+
+                // 取消按钮事件
+                cancelBtn.onclick = () => {
+                    editModal.style.display = 'none';
+                };
+
+                // 表单提交事件
+                editForm.onsubmit = async (e) => {
+                    e.preventDefault();
+                    showLoading();
+
+                    try {
+                        const updatedDevice = {
+                            host_name: document.getElementById('edit_host_name').value.trim(),
+                            cabinet_id: document.getElementById('edit_cabinet_id').value.trim(),
+                            cabinet_position: document.getElementById('edit_cabinet_position').value.trim(),
+                            serial_number: document.getElementById('edit_serial_number').value.trim(),
+                            ip_address: document.getElementById('edit_ip_address').value.trim(),
+                            mark: document.getElementById('edit_mark').value.trim()
+                        };
+
+                        // 更新数据库
+                        const { data, error } = await supabase
+                            .from('devices')
+                            .update(updatedDevice)
+                            .eq('id', device.id)
+                            .select();
+
+                        if (error) throw error;
+
+                        showStatus('设备信息更新成功');
+                        editModal.style.display = 'none';
+                        await loadAllDevices(); // 重新加载数据
+                    } catch (error) {
+                        console.error('更新失败:', error);
+                        showStatus('更新失败: ' + error.message, true);
+                    } finally {
+                        hideLoading();
+                    }
+                };
+
+            } catch (error) {
+                console.error('编辑失败:', error);
+                showStatus('编辑失败: ' + error.message, true);
+            }
+        }
+
+        // 删除设备
+        async function handleDelete(device) {
+            if (!confirm(`确定要删除设备 ${device.host_name} 吗？`)) {
+                return;
+            }
+
+            try {
+                showLoading();
+                const { error } = await supabase
+                    .from('devices')
+                    .delete()
+                    .eq('id', device.id);
+
+                if (error) throw error;
+
+                showStatus('设备删除成功');
+                await loadAllDevices(); // 重新加载数据
+            } catch (error) {
+                console.error('删除失败:', error);
+                showStatus('删除失败: ' + error.message, true);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // 新增设备处理函数
+        async function handleAdd() {
+            try {
+                const editModal = document.querySelector('.edit-modal');
+                const editForm = document.getElementById('editForm');
+                const cancelBtn = editForm.querySelector('.btn-cancel');
+                
+                // 清空表单数据
+                document.getElementById('edit_host_name').value = '';
+                document.getElementById('edit_cabinet_id').value = '';
+                document.getElementById('edit_cabinet_position').value = '';
+                document.getElementById('edit_serial_number').value = '';
+                document.getElementById('edit_ip_address').value = '';
+                document.getElementById('edit_mark').value = '';
+
+                // 修改模态框标题
+                editModal.querySelector('h3').textContent = '新增设备';
+                
+                // 显示模态框
+                editModal.style.display = 'flex';
+
+                // 取消按钮事件
+                cancelBtn.onclick = () => {
+                    editModal.style.display = 'none';
+                    // 恢复模态框标题
+                    editModal.querySelector('h3').textContent = '编辑设备信息';
+                };
+
+                // 表单提交事件
+                editForm.onsubmit = async (e) => {
+                    e.preventDefault();
+                    showLoading();
+
+                    try {
+                        const newDevice = {
+                            host_name: document.getElementById('edit_host_name').value.trim(),
+                            cabinet_id: document.getElementById('edit_cabinet_id').value.trim(),
+                            cabinet_position: document.getElementById('edit_cabinet_position').value.trim(),
+                            serial_number: document.getElementById('edit_serial_number').value.trim(),
+                            ip_address: document.getElementById('edit_ip_address').value.trim(),
+                            mark: document.getElementById('edit_mark').value.trim()
+                        };
+
+                        // 插入数据库
+                        const { data, error } = await supabase
+                            .from('devices')
+                            .insert(newDevice)
+                            .select();
+
+                        if (error) throw error;
+
+                        showStatus('设备添加成功');
+                        editModal.style.display = 'none';
+                        // 恢复模态框标题
+                        editModal.querySelector('h3').textContent = '编辑设备信息';
+                        await loadAllDevices(); // 重新加载数据
+                    } catch (error) {
+                        console.error('添加失败:', error);
+                        showStatus('添加失败: ' + error.message, true);
+                    } finally {
+                        hideLoading();
+                    }
+                };
+
+            } catch (error) {
+                console.error('新增设备失败:', error);
+                showStatus('新增设备失败: ' + error.message, true);
+            }
+        }
+
+        // 添加新增按钮事件监听器
+        addBtn.addEventListener('click', handleAdd);
 
         // 页面加载时获取所有数据
         loadAllDevices();
