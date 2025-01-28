@@ -48,8 +48,8 @@
 
         <!-- 将查看示意图按钮放到这里 -->
         <div class="button-container">
-            <button id="viewExchangeCardBtn" style="display: none;">查看交换卡示意图</button>
-            <button id="viewBoardCardBtn" style="display: none;">查看板卡示意图</button>
+            <button id="viewSwitchImageBtn" style="display: none;">查看交换卡示意图</button>
+            <button id="viewImageBtn" style="display: none;">查看板卡示意图</button>
         </div>
 
         <div class="pagination">
@@ -220,22 +220,7 @@
                 }
 
                 displayCurrentPage();
-                console.log('filteredDevices:', filteredDevices);
-
-                // 根据搜索结果显示或隐藏按钮
-                const viewImageBtn = document.getElementById('viewImageBtn');
-                const viewSwitchImageBtn = document.getElementById('viewSwitchImageBtn');
-                const viewExchangeCardBtn = document.getElementById('viewExchangeCardBtn');
-                const viewBoardCardBtn = document.getElementById('viewBoardCardBtn');
-                
-                if (filteredDevices.length > 0 && searchType === 'ip') {
-                    viewExchangeCardBtn.style.display = 'block'; // 显示查看交换卡示意图按钮
-                    viewBoardCardBtn.style.display = 'block'; // 显示查看板卡示意图按钮
-                } else {
-                    viewExchangeCardBtn.style.display = 'none'; // 隐藏查看交换卡示意图按钮
-                    viewBoardCardBtn.style.display = 'none'; // 隐藏查看板卡示意图按钮
-                }
-
+                // console.log('filteredDevices:', filteredDevices)
             } catch (error) {
                 console.error('搜索错误:', error);
                 showStatus(error.message, true);
@@ -463,11 +448,13 @@
                 const viewImageBtn = document.getElementById('viewImageBtn');
                 if (viewImageBtn) {
                     viewImageBtn.style.display = 'block'; // 显示按钮
+                    viewSwitchImageBtn.style.display = 'block'; // 显示按钮 
                 }
             } else {
                 const viewImageBtn = document.getElementById('viewImageBtn');
                 if (viewImageBtn) {
                     viewImageBtn.style.display = 'none'; // 隐藏按钮
+                    viewSwitchImageBtn.style.display = 'none'; // 隐藏按钮
                 }
             }
         }
@@ -843,7 +830,7 @@
 
         // 添加查看板卡示意图按钮的事件监听器
         const viewImageBtn = document.getElementById('viewImageBtn');
-        if (viewImageBtn) { // 确保元素存在
+        if (viewImageBtn) {
             viewImageBtn.addEventListener('click', (event) => {
                 event.stopPropagation(); // 阻止事件冒泡，防止关闭弹框
 
