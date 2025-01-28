@@ -46,6 +46,11 @@
             </table>
         </div>
 
+        <!-- 将查看示意图按钮放到这里 -->
+        <div class="view-image-container" style="text-align: center; margin-top: 20px;">
+            <button id="viewImageBtn" style="display: none;">查看示意图</button>
+        </div>
+
         <div class="pagination">
             <button id="prevPage" disabled>上一页</button>
             <span id="pageInfo">第 1 页</span>
@@ -92,8 +97,17 @@
         </div>
     </div>
 
+    <!-- 修改模态框的样式 -->
+    <div class="image-modal" style="display: none;">
+        <div class="modal-content" id="modalContent">
+            <span class="close">&times;</span>
+            <img id="modalImage" src="" alt="示意图" style="max-width: 100%; height: auto; transform-origin: center; transition: transform 0.2s;">
+        </div>
+    </div>
+
     <script type="module">
         import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+        import { cardImages } from './js/hippo/cardImages.js'
 
         // Supabase配置
         const supabaseUrl = 'https://chrbvtredcnfdnvscciw.supabase.co'
@@ -268,14 +282,23 @@
         // IP地址搜索函数
         function searchByIP(searchValue) {
             // 查找匹配的记录
-            const matchedDevice = allDevices.find(device => {
+            const matchedDevices = allDevices.filter(device => {
                 const ipRange = device.ip_address;
                 if (!ipRange) return false;
                 return isIpInRange(searchValue, ipRange);
             });
 
-            if (matchedDevice) {
-                filteredDevices = [matchedDevice];
+            if (matchedDevices.length > 0) {
+                // 获取匹配的设备
+                filteredDevices = matchedDevices;
+
+                // 计算搜索IP在匹配记录中的索引
+                const index = matchedDevices.findIndex(device => isIpInRange(searchValue, device.ip_address));
+                const imageIndex = index % 2; // 计算索引的%2值
+
+                // 获取示意图的URL
+                const imageUrl = cardImages[imageIndex];
+                document.getElementById('modalImage').src = imageUrl; // 设置示意图的src
             } else {
                 filteredDevices = [];
                 throw new Error('未找到匹配的IP地址记录');
@@ -383,7 +406,7 @@
                     // 添加按钮事件监听器
                     const editBtn = row.querySelector('.btn-edit');
                     const deleteBtn = row.querySelector('.btn-delete');
-                    
+
                     editBtn.addEventListener('click', () => handleEdit(device));
                     deleteBtn.addEventListener('click', () => handleDelete(device));
                 });
@@ -405,6 +428,18 @@
             if (!hidePageButtons) {
                 prevPageBtn.disabled = currentPage === 1;
                 nextPageBtn.disabled = currentPage === totalPages;
+            }
+
+            // 添加模态框关闭事件
+            document.querySelector('.image-modal .close').onclick = () => {
+                document.querySelector('.image-modal').style.display = 'none';
+            };
+
+            // 在更新表格内容的地方
+            if (filteredDevices.length === 1) {
+                document.getElementById('viewImageBtn').style.display = 'block'; // 显示按钮
+            } else {
+                document.getElementById('viewImageBtn').style.display = 'none'; // 隐藏按钮
             }
         }
 
@@ -689,6 +724,84 @@
 
         // 页面加载时获取所有数据
         loadAllDevices();
+
+        // 在模态框显示时添加缩放功能
+        const modalImage = document.getElementById('modalImage');
+        let scale = 1;
+
+        // 鼠标滚轮缩放
+        modalImage.addEventListener('wheel', (event) => {
+            event.preventDefault();
+            scale += event.deltaY > 0 ? -0.1 : 0.1; // 根据滚轮方向调整缩放比例
+            scale = Math.min(Math.max(1, scale), 3); // 限制缩放范围
+            modalImage.style.transform = `scale(${scale})`;
+        });
+
+        // 触摸缩放
+        let initialDistance = null;
+
+        modalImage.addEventListener('touchstart', (event) => {
+            if (event.touches.length === 2) {
+                initialDistance = Math.hypot(
+                    event.touches[0].clientX - event.touches[1].clientX,
+                    event.touches[0].clientY - event.touches[1].clientY
+                );
+            }
+        });
+
+        modalImage.addEventListener('touchmove', (event) => {
+            if (event.touches.length === 2 && initialDistance) {
+                const currentDistance = Math.hypot(
+                    event.touches[0].clientX - event.touches[1].clientX,
+                    event.touches[0].clientY - event.touches[1].clientY
+                );
+                scale *= currentDistance / initialDistance; // 根据手指间距调整缩放比例
+                scale = Math.min(Math.max(1, scale), 3); // 限制缩放范围
+                modalImage.style.transform = `scale(${scale})`;
+                initialDistance = currentDistance; // 更新初始距离
+            }
+        });
+
+        modalImage.addEventListener('touchend', () => {
+            initialDistance = null; // 重置初始距离
+        });
+
+        // 添加拖动功能
+        const modalContent = document.getElementById('modalContent');
+
+        let isDragging = false;
+        let startX, startY, initialX, initialY;
+
+        modalContent.addEventListener('mousedown', (event) => {
+            isDragging = true;
+            startX = event.clientX;
+            startY = event.clientY;
+            initialX = modalContent.getBoundingClientRect().left; // 获取相对于视口的位置
+            initialY = modalContent.getBoundingClientRect().top;
+
+            // 防止文本选择
+            event.preventDefault();
+        });
+
+        document.addEventListener('mousemove', (event) => {
+            if (isDragging) {
+                const dx = event.clientX - startX; // 计算鼠标移动的距离
+                const dy = event.clientY - startY;
+                modalContent.style.left = `${initialX + dx}px`; // 更新弹框位置
+                modalContent.style.top = `${initialY + dy}px`;
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+
+        // 添加查看示意图按钮的事件监听器
+        document.getElementById('viewImageBtn').addEventListener('click', () => {
+            const imageUrl = 'https://chrbvtredcnfdnvscciw.supabase.co/storage/v1/object/sign/hippo_images/hippo_21.jpg?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1cmwiOiJoaXBwb19pbWFnZXMvaGlwcG9fMjEuanBnIiwiaWF0IjoxNzM4MDUwMjg1LCJleHAiOjE4OTU3MzAyODV9.83sSBa2B2lAxN_VIPQArHjQrfvH-VXH-_RFaEdjjdOw'
+            document.getElementById('modalImage').src = imageUrl;
+            document.querySelector('.image-modal').style.display = 'flex';
+        });
     </script>
 </body>
 </html>

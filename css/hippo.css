@@ -641,3 +641,60 @@ tr.highlight:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 15px rgba(33, 150, 243, 0.3);
 }
+
+.image-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    justify-content: center;
+    align-items: center;
+    z-index: 1200;
+}
+
+.image-modal .modal-content {
+    background-color: white;
+    padding: 1rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    position: relative;
+    width: 50vw; /* 设置模态框宽度为视口的50% */
+    max-width: 800px; /* 可选：设置最大宽度 */
+    cursor: move; /* 添加移动光标 */
+}
+
+.image-modal .close {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 20px;
+    cursor: pointer;
+}
+
+.view-image-container {
+    margin-top: 20px;
+}
+
+#viewImageBtn {
+    padding: 10px 20px; /* 增加内边距 */
+    background: linear-gradient(45deg, #2196F3, #1976D2); /* 渐变背景 */
+    color: white; /* 字体颜色 */
+    border: none; /* 去掉边框 */
+    border-radius: 5px; /* 圆角 */
+    font-size: 16px; /* 字体大小 */
+    cursor: pointer; /* 鼠标指针 */
+    transition: background 0.3s, transform 0.2s; /* 添加过渡效果 */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); /* 添加阴影 */
+}
+
+#viewImageBtn:hover {
+    background: linear-gradient(45deg, #1E88E5, #1565C0); /* 悬停时的渐变背景 */
+    transform: translateY(-2px); /* 悬停时轻微上移 */
+}
+
+#viewImageBtn:active {
+    transform: translateY(1px); /* 点击时轻微下移 */
+}
