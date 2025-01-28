@@ -1,4 +1,4 @@
-const switchCardImages = [
+export const switchCardImages = [
     "https://chrbvtredcnfdnvscciw.supabase.co/storage/v1/object/sign/hippo_images/hippo_sw1.jpg?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1cmwiOiJoaXBwb19pbWFnZXMvaGlwcG9fc3cxLmpwZyIsImlhdCI6MTczODA1MDg3NSwiZXhwIjoxODk1NzMwODc1fQ.6BbbTjzeRBYhMrxP5k1ob873UYFx-rxdBt01YpKO2Yw",
     "https://chrbvtredcnfdnvscciw.supabase.co/storage/v1/object/sign/hippo_images/hippo_sw2.jpg?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1cmwiOiJoaXBwb19pbWFnZXMvaGlwcG9fc3cyLmpwZyIsImlhdCI6MTczODA1MDg5MSwiZXhwIjoxODk1NzMwODkxfQ.54W7d3D-N_m8uSaa4b8N7ZjJk94RLQfvZnLBr2ZlVHk",
     "https://chrbvtredcnfdnvscciw.supabase.co/storage/v1/object/sign/hippo_images/hippo_sw3.jpg?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1cmwiOiJoaXBwb19pbWFnZXMvaGlwcG9fc3czLmpwZyIsImlhdCI6MTczODA1MDkwNCwiZXhwIjoxODk1NzMwOTA0fQ.c3rlD3gNbsAxmAHYCYQACxP0hn8z-RCTpATwe9yRS0o", 
