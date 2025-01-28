@@ -698,3 +698,54 @@ tr.highlight:hover {
 #viewImageBtn:active {
     transform: translateY(1px); /* 点击时轻微下移 */
 }
+
+.image-btn {
+    background-color: #4CAF50; /* 绿色背景 */
+    color: white; /* 白色文字 */
+    border: none; /* 无边框 */
+    padding: 10px 20px; /* 内边距 */
+    text-align: center; /* 文本居中 */
+    text-decoration: none; /* 无下划线 */
+    display: inline-block; /* 使按钮在同一行 */
+    font-size: 16px; /* 字体大小 */
+    margin: 5px; /* 按钮间距 */
+    cursor: pointer; /* 鼠标悬停时显示手型 */
+    border-radius: 5px; /* 圆角 */
+    transition: background-color 0.3s; /* 背景色过渡效果 */
+}
+
+.image-btn:hover {
+    background-color: #45a049; /* 悬停时的背景色 */
+}
+
+/* 新增按钮容器样式 */
+.button-container {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+.button-container button {
+    background-color: #4CAF50; /* 绿色背景 */
+    color: white; /* 白色文字 */
+    border: none; /* 无边框 */
+    padding: 10px 20px; /* 内边距 */
+    text-align: center; /* 文字居中 */
+    text-decoration: none; /* 无下划线 */
+    display: inline-block; /* 行内块元素 */
+    font-size: 16px; /* 字体大小 */
+    margin: 5px; /* 外边距 */
+    cursor: pointer; /* 鼠标指针 */
+    border-radius: 5px; /* 圆角 */
+    transition: background-color 0.3s, transform 0.2s; /* 动画效果 */
+}
+
+.button-container button:hover {
+    background-color: #45a049; /* 悬停时的背景颜色 */
+    transform: scale(1.05); /* 悬停时放大 */
+}
+
+.button-container button:disabled {
+    background-color: #ccc; /* 禁用状态的背景颜色 */
+    cursor: not-allowed; /* 禁用状态的鼠标指针 */
+}

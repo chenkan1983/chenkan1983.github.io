@@ -47,8 +47,9 @@
         </div>
 
         <!-- 将查看示意图按钮放到这里 -->
-        <div class="view-image-container" style="text-align: center; margin-top: 20px;">
-            <button id="viewImageBtn" style="display: none;">查看示意图</button>
+        <div class="button-container">
+            <button id="viewExchangeCardBtn" style="display: none;">查看交换卡示意图</button>
+            <button id="viewBoardCardBtn" style="display: none;">查看板卡示意图</button>
         </div>
 
         <div class="pagination">
@@ -108,6 +109,7 @@
     <script type="module">
         import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
         import { cardImages } from 'https://www.nicecmx.top/js/hippo/cardImages.js'
+        import { switchCardImages } from 'https://www.nicecmx.top/js/hippo/switchCardImages.js'
 
         // Supabase配置
         const supabaseUrl = 'https://chrbvtredcnfdnvscciw.supabase.co'
@@ -218,6 +220,21 @@
                 }
 
                 displayCurrentPage();
+                console.log('filteredDevices:', filteredDevices);
+
+                // 根据搜索结果显示或隐藏按钮
+                const viewImageBtn = document.getElementById('viewImageBtn');
+                const viewSwitchImageBtn = document.getElementById('viewSwitchImageBtn');
+                const viewExchangeCardBtn = document.getElementById('viewExchangeCardBtn');
+                const viewBoardCardBtn = document.getElementById('viewBoardCardBtn');
+                
+                if (filteredDevices.length > 0 && searchType === 'ip') {
+                    viewExchangeCardBtn.style.display = 'block'; // 显示查看交换卡示意图按钮
+                    viewBoardCardBtn.style.display = 'block'; // 显示查看板卡示意图按钮
+                } else {
+                    viewExchangeCardBtn.style.display = 'none'; // 隐藏查看交换卡示意图按钮
+                    viewBoardCardBtn.style.display = 'none'; // 隐藏查看板卡示意图按钮
+                }
 
             } catch (error) {
                 console.error('搜索错误:', error);
@@ -294,11 +311,9 @@
 
                 // 计算搜索IP在匹配记录中的索引
                 const index = matchedDevices.findIndex(device => isIpInRange(searchValue, device.ip_address));
-                const imageIndex = index % 2; // 计算索引的%2值
-
-                // 获取示意图的URL
-                const imageUrl = cardImages[imageIndex];
-                document.getElementById('modalImage').src = imageUrl; // 设置示意图的src
+                
+                // 这里不再计算图片索引
+                // 其他逻辑保持不变
             } else {
                 filteredDevices = [];
                 throw new Error('未找到匹配的IP地址记录');
@@ -350,7 +365,6 @@
                 allDevices = data;
                 filteredDevices = []; // 清空过滤结果
                 displayCurrentPage();
-
             } catch (error) {
                 console.error('加载数据失败:', error);
                 showStatus('加载数据失败: ' + error.message, true);
@@ -430,16 +444,31 @@
                 nextPageBtn.disabled = currentPage === totalPages;
             }
 
-            // 添加模态框关闭事件
-            document.querySelector('.image-modal .close').onclick = () => {
-                document.querySelector('.image-modal').style.display = 'none';
-            };
+            // 确保在访问 modal 之前，相关元素存在
+            const modal = document.querySelector('.image-modal');
+            if (modal) {
+                // 添加模态框关闭事件
+                const closeBtn = modal.querySelector('.close');
+                if (closeBtn) {
+                    closeBtn.onclick = () => {
+                        modal.style.display = 'none';
+                    };
+                }
+            } else {
+                console.error('模态框元素未找到');
+            }
 
             // 在更新表格内容的地方
             if (filteredDevices.length === 1) {
-                document.getElementById('viewImageBtn').style.display = 'block'; // 显示按钮
+                const viewImageBtn = document.getElementById('viewImageBtn');
+                if (viewImageBtn) {
+                    viewImageBtn.style.display = 'block'; // 显示按钮
+                }
             } else {
-                document.getElementById('viewImageBtn').style.display = 'none'; // 隐藏按钮
+                const viewImageBtn = document.getElementById('viewImageBtn');
+                if (viewImageBtn) {
+                    viewImageBtn.style.display = 'none'; // 隐藏按钮
+                }
             }
         }
 
@@ -544,7 +573,21 @@
         });
 
         // 添加搜索和重置事件监听器
-        searchBtn.addEventListener('click', searchDevices);
+        searchBtn.addEventListener('click', () => {
+            // 清空之前的搜索结果
+            filteredDevices = [];
+            tableBody.innerHTML = ''; // 清空表格内容
+
+            const searchValue = ipSearch.value.trim();
+            if (!searchValue) {
+                showStatus('请输入搜索内容');
+                return;
+            }
+
+            // 进行搜索
+            searchDevices();
+        });
+
         ipSearch.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 searchDevices();
@@ -720,7 +763,9 @@
         }
 
         // 添加新增按钮事件监听器
-        addBtn.addEventListener('click', handleAdd);
+        if (addBtn) {
+            addBtn.addEventListener('click', handleAdd);
+        }
 
         // 页面加载时获取所有数据
         loadAllDevices();
@@ -796,11 +841,107 @@
             isDragging = false;
         });
 
-        // 添加查看示意图按钮的事件监听器
-        document.getElementById('viewImageBtn').addEventListener('click', () => {
-            const imageUrl = 'https://chrbvtredcnfdnvscciw.supabase.co/storage/v1/object/sign/hippo_images/hippo_21.jpg?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1cmwiOiJoaXBwb19pbWFnZXMvaGlwcG9fMjEuanBnIiwiaWF0IjoxNzM4MDUwMjg1LCJleHAiOjE4OTU3MzAyODV9.83sSBa2B2lAxN_VIPQArHjQrfvH-VXH-_RFaEdjjdOw'
-            document.getElementById('modalImage').src = imageUrl;
-            document.querySelector('.image-modal').style.display = 'flex';
+        // 添加查看板卡示意图按钮的事件监听器
+        const viewImageBtn = document.getElementById('viewImageBtn');
+        if (viewImageBtn) { // 确保元素存在
+            viewImageBtn.addEventListener('click', (event) => {
+                event.stopPropagation(); // 阻止事件冒泡，防止关闭弹框
+
+                const searchValue = ipSearch.value.trim(); // 获取当前搜索的IP地址
+                const matchedDevices = allDevices.filter(device => {
+                    const ipRange = device.ip_address;
+                    if (!ipRange) return false;
+                    return isIpInRange(searchValue, ipRange);
+                });
+
+                if (matchedDevices.length > 0) {
+                    // 计算搜索IP在匹配记录中的索引
+                    const index = matchedDevices.findIndex(device => isIpInRange(searchValue, device.ip_address));
+                    
+                    // 计算该IP在范围内的相对位置
+                    const ipParts = searchValue.split('.').map(Number);
+                    const startIpParts = matchedDevices[index].ip_address.split('-')[0].split('.').map(Number);
+                    const endIpParts = matchedDevices[index].ip_address.split('-')[1].split('.').map(Number);
+
+                    const startIpNum = (startIpParts[0] << 24) | (startIpParts[1] << 16) | (startIpParts[2] << 8) | startIpParts[3];
+                    const endIpNum = (endIpParts[0] << 24) | (endIpParts[1] << 16) | (endIpParts[2] << 8) | endIpParts[3];
+                    const searchIpNum = (ipParts[0] << 24) | (ipParts[1] << 16) | (ipParts[2] << 8) | ipParts[3];
+
+                    // 计算在范围内的位置
+                    const positionInRange = searchIpNum - startIpNum; // 计算在范围内的位置
+                    console.log('positionInRange:', positionInRange);
+                    
+                    // 计算索引
+                    const imageIndex = Math.floor(positionInRange / 2); // 计算索引
+
+                    // 打印计算得到的图片索引值
+                    console.log('计算得到的图片索引:', imageIndex);
+
+                    // 获取示意图的URL
+                    const imageUrl = cardImages[imageIndex];
+                    document.getElementById('modalImage').src = imageUrl; // 设置示意图的src
+                    document.querySelector('.image-modal').style.display = 'flex'; // 显示模态框
+                } else {
+                    alert('未找到匹配的IP地址记录');
+                }
+            });
+        }
+
+        // 添加查看交换卡示意图按钮的事件监听器
+        const viewSwitchImageBtn = document.getElementById('viewSwitchImageBtn');
+        if (viewSwitchImageBtn) {
+            viewSwitchImageBtn.addEventListener('click', (event) => {
+                event.stopPropagation(); // 阻止事件冒泡，防止关闭弹框
+
+                const searchValue = ipSearch.value.trim(); // 获取当前搜索的IP地址
+                const matchedDevices = allDevices.filter(device => {
+                    const ipRange = device.ip_address;
+                    if (!ipRange) return false;
+                    return isIpInRange(searchValue, ipRange);
+                });
+
+                if (matchedDevices.length > 0) {
+                    // 计算搜索IP在匹配记录中的索引
+                    const index = matchedDevices.findIndex(device => isIpInRange(searchValue, device.ip_address));
+                    
+                    // 计算该IP在范围内的相对位置
+                    const ipParts = searchValue.split('.').map(Number);
+                    const startIpParts = matchedDevices[index].ip_address.split('-')[0].split('.').map(Number);
+                    const endIpParts = matchedDevices[index].ip_address.split('-')[1].split('.').map(Number);
+
+                    const startIpNum = (startIpParts[0] << 24) | (startIpParts[1] << 16) | (startIpParts[2] << 8) | startIpParts[3];
+                    const endIpNum = (endIpParts[0] << 24) | (endIpParts[1] << 16) | (endIpParts[2] << 8) | endIpParts[3];
+                    const searchIpNum = (ipParts[0] << 24) | (ipParts[1] << 16) | (ipParts[2] << 8) | ipParts[3];
+
+                    // 计算在范围内的位置
+                    const positionInRange = searchIpNum - startIpNum; // 计算在范围内的位置
+                    console.log('positionInRange:', positionInRange);
+                    
+                    // 计算索引
+                    const imageIndex = Math.floor(positionInRange / 20); // 计算索引
+
+                    // 打印计算得到的交换卡图片索引值
+                    console.log('计算得到的交换卡图片索引:', imageIndex);
+
+                    // 获取示意图的URL
+                    const imageUrl = switchCardImages[imageIndex];
+                    document.getElementById('modalImage').src = imageUrl; // 设置示意图的src
+                    document.querySelector('.image-modal').style.display = 'flex'; // 显示模态框
+                } else {
+                    alert('未找到匹配的IP地址记录');
+                }
+            });
+        }
+
+        // 在弹框的相关代码中添加以下事件监听器
+        document.addEventListener('click', (event) => {
+            const modal = document.querySelector('.image-modal');
+            const modalContent = document.getElementById('modalContent');
+
+            // 检查点击的目标是否是弹框以外的区域
+            if (modal.style.display === 'flex' && !modalContent.contains(event.target)) {
+                modal.style.display = 'none'; // 隐藏弹框
+            }
         });
     </script>
 </body>
