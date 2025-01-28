@@ -347,9 +347,10 @@
 
                 if (error) throw error;
 
-                allDevices = data;
+                allDevices = data; // 确保数据正确加载
                 filteredDevices = []; // 清空过滤结果
-                displayCurrentPage();
+                searchDevices();
+                // displayCurrentPage(); // 显示当前页面数据
             } catch (error) {
                 console.error('加载数据失败:', error);
                 showStatus('加载数据失败: ' + error.message, true);
@@ -639,7 +640,7 @@
 
                         showStatus('设备信息更新成功');
                         editModal.style.display = 'none';
-                        await loadAllDevices(); // 重新加载数据
+                        await loadAllDevices(); // 重新加载数据，确保列表更新
                     } catch (error) {
                         console.error('更新失败:', error);
                         showStatus('更新失败: ' + error.message, true);
