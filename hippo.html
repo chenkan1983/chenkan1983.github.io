@@ -293,12 +293,6 @@
             if (matchedDevices.length > 0) {
                 // 获取匹配的设备
                 filteredDevices = matchedDevices;
-
-                // 计算搜索IP在匹配记录中的索引
-                const index = matchedDevices.findIndex(device => isIpInRange(searchValue, device.ip_address));
-                
-                // 这里不再计算图片索引
-                // 其他逻辑保持不变
             } else {
                 filteredDevices = [];
                 throw new Error('未找到匹配的IP地址记录');
@@ -350,7 +344,6 @@
                 allDevices = data; // 确保数据正确加载
                 filteredDevices = []; // 清空过滤结果
                 searchDevices();
-                // displayCurrentPage(); // 显示当前页面数据
             } catch (error) {
                 console.error('加载数据失败:', error);
                 showStatus('加载数据失败: ' + error.message, true);
@@ -766,7 +759,7 @@
         modalImage.addEventListener('wheel', (event) => {
             event.preventDefault();
             scale += event.deltaY > 0 ? -0.1 : 0.1; // 根据滚轮方向调整缩放比例
-            scale = Math.min(Math.max(1, scale), 3); // 限制缩放范围
+            scale = Math.min(Math.max(0.1, scale), 3); // 限制缩放范围
             modalImage.style.transform = `scale(${scale})`;
         });
 
@@ -789,7 +782,7 @@
                     event.touches[0].clientY - event.touches[1].clientY
                 );
                 scale *= currentDistance / initialDistance; // 根据手指间距调整缩放比例
-                scale = Math.min(Math.max(1, scale), 3); // 限制缩放范围
+                scale = Math.min(Math.max(0.1, scale), 3); // 限制缩放范围
                 modalImage.style.transform = `scale(${scale})`;
                 initialDistance = currentDistance; // 更新初始距离
             }
