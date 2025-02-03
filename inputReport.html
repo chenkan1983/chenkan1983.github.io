@@ -183,6 +183,9 @@
                             mergedReports.push(reportItem);
                         }
                     }
+                    const uniqueReports = Array.from(new Map(mergedReports.map(item => [JSON.stringify(item), item])).values());
+                    mergedReports.length = 0; // 清空原数组
+                    mergedReports.push(...uniqueReports); // 将去重后的结果推入原数组
                     // 保存合并后的报告到缓存
                     localStorage.setItem('reports', JSON.stringify(mergedReports));
                     
