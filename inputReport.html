@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>录入报告</title>
     <link rel="stylesheet" href="./css/report.css">
 </head>
+
 <body>
     <!-- 添加遮罩和加载动画 -->
     <div class="overlay">
@@ -36,13 +38,13 @@
         const API_URL = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
 
         // 检查登录状态
-        window.onload = function() {
+        window.onload = function () {
             const email = localStorage.getItem('email');
             if (!email) {
                 window.location.href = 'loginReport.html';
                 return;
             }
-            
+
             // 加载选中的图片
             const selectedImage = localStorage.getItem('selectedImage');
             if (selectedImage) {
@@ -121,7 +123,7 @@
         const parseReportButton = document.querySelector('.parse-report');
         const parsedReportContainer = document.querySelector('.parsed-report');
 
-        parseReportButton.addEventListener('click', async function() {
+        parseReportButton.addEventListener('click', async function () {
             const selectedImage = localStorage.getItem('selectedImage');
             if (!selectedImage) {
                 alert('请先选择图片！');
@@ -135,8 +137,43 @@
                 const blob = await response.blob();
                 const base64Image = await getBase64(blob);
 
-                const prompt = "请识别图片中的医学报告，提取所有检查项目以及对应的数值，并以 JSON 格式返回，格式参考：'白细胞计数': { '结果': '4.48', '参考范围': '3.50-9.50', '单位': '10^9/L' }。请严格按照实事求是的原则，不要胡编乱造、无中生有，并保留报告中的原始文字，不要包含表格的列标题，不要翻译内容，保留完整检查项目的名字（包括括号内的部分），去掉结果数字后面的箭头符号，确保返回标准的 JSON 格式。如果图片底部包含'报告时间'，也请将报告时间提取出来，并放到返回内容的最前面，格式参考：'报告时间': '2024-01-01 01:01:01'。请注意：如果图片底部没有报告时间，就不要添加报告时间，更不要把参考格式作为结果返回。";
+                // const prompt = "请识别图片中的医学报告，提取所有检查项目以及对应的数值，并以 JSON 格式返回，格式参考：'白细胞计数': { '结果': '4.48', '参考范围': '3.50-9.50', '单位': '10^9/L' }。请严格按照实事求是的原则，不要胡编乱造、无中生有，并保留报告中的原始文字，不要包含表格的列标题，不要翻译内容，保留完整检查项目的名字（包括括号内的部分），去掉结果数字后面的箭头符号，确保返回标准的 JSON 格式。如果图片底部包含'报告时间'，也请将报告时间提取出来，并放到返回内容的最前面，格式参考：'报告时间': '2024-01-01 01:01:01'。请注意：如果图片底部没有报告时间，就不要添加报告时间，更不要把参考格式作为结果返回。";
+                const prompt = `请严格按以下要求处理医学报告图片：
 
+1. 若图片底部包含"报告时间"字段，提取并作为JSON首项，格式：
+   "报告时间": "YYYY-MM-DD HH:mm:ss"
+
+2. 识别所有检查项目，需满足：
+   - 保留原始项目名称（含括号内容，如中性粒细胞百分比(NE%)）
+   - 提取结构：{项目名}: {
+       "结果": "数值",
+       "参考范围": "x-x",
+       "单位": "..."
+     }
+   - 清除结果数字后的箭头符号（如4.48↑→4.48）
+
+3. 输出要求：
+   - 纯JSON格式（无Markdown标记）
+   - 仅包含图片中实际存在的内容
+   - 数值和单位严格按报告原文
+   - 禁止列标题、翻译、推测或补充内容
+
+4. 无报告时间时，直接以检查项目开头，不添加"报告时间"字段
+
+正确格式示例：
+{
+    "报告时间": "2023-05-20 14:30:15",
+    "白细胞计数": {
+        "结果": "4.48",
+        "参考范围": "3.50-9.50",
+        "单位": "10^9/L"
+    },
+    "中性粒细胞百分比(NE%)": {
+        "结果": "62.3",
+        "参考范围": "40.0-75.0",
+        "单位": "%"
+    }
+}`;
                 const result = await callGLM4V(base64Image, prompt);
 
 
@@ -187,7 +224,7 @@
                     mergedReports.push(...uniqueReports); // 将去重后的结果推入原数组
                     // 保存合并后的报告到缓存
                     localStorage.setItem('reports', JSON.stringify(mergedReports));
-                    
+
                     // 显示上传报告按钮
                     document.querySelector('.upload-report').style.display = 'block';
                     alert('报告已解析并成功存入缓存！');
@@ -202,12 +239,12 @@
         });
 
         // 上传报告按钮点击事件
-        document.querySelector('.upload-report').addEventListener('click', async function() {
+        document.querySelector('.upload-report').addEventListener('click', async function () {
             try {
                 showLoading();
                 const userEmail = localStorage.getItem('email');
-                const reportTime = localStorage.getItem('reportTime') || 
-                    new Date().toLocaleString('zh-CN', { 
+                const reportTime = localStorage.getItem('reportTime') ||
+                    new Date().toLocaleString('zh-CN', {
                         timeZone: 'Asia/Shanghai',
                         year: 'numeric',
                         month: '2-digit',
@@ -215,7 +252,7 @@
                         hour: '2-digit',
                         minute: '2-digit',
                         second: '2-digit',
-                        hour12: false 
+                        hour12: false
                     }).replace(/\//g, '-');
                 const reports = JSON.parse(localStorage.getItem('reports')) || [];
 
@@ -245,15 +282,15 @@
 
         // 修改图片预览点击事件
         const imagePreview = document.getElementById('imagePreview');
-        imagePreview.addEventListener('click', function() {
+        imagePreview.addEventListener('click', function () {
             // 创建一个隐藏的文件输入框
             const fileInput = document.createElement('input');
             fileInput.type = 'file';
             fileInput.accept = 'image/*';
             fileInput.style.display = 'none';
-            
+
             // 添加文件选择事件处理
-            fileInput.addEventListener('change', function(e) {
+            fileInput.addEventListener('change', function (e) {
                 const file = e.target.files[0];
                 if (file) {
                     if (!file.type.startsWith('image/')) {
@@ -262,14 +299,14 @@
                     }
 
                     const reader = new FileReader();
-                    reader.onload = function(e) {
+                    reader.onload = function (e) {
                         // 更新图片预览
                         imagePreview.src = e.target.result;
                         // 保存选中的图片到本地存储
                         localStorage.setItem('selectedImage', e.target.result);
                     };
 
-                    reader.onerror = function() {
+                    reader.onerror = function () {
                         alert('图片加载失败，请重试！');
                     };
 
@@ -282,4 +319,5 @@
         });
     </script>
 </body>
+
 </html>
