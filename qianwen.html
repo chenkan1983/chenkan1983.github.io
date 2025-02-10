@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>通义千问报告图片分析</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .upload-section {
+            text-align: center;
+            padding: 40px;
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .upload-section:hover {
+            border-color: #666;
+            background-color: #f9f9f9;
+        }
+
+        #imagePreview {
+            max-width: 100%;
+            max-height: 400px;
+            display: none;
+            margin: 20px auto;
+            border-radius: 8px;
+        }
+
+        .prompt-section {
+            margin: 20px 0;
+        }
+
+        textarea {
+            width: 100%;
+            height: 100px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .result-section {
+            margin-top: 20px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            display: none;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #fff;
+            overflow-x: auto;
+        }
+
+        .result-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        .result-table th,
+        .result-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        .result-table th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .result-table tr:hover {
+            background-color: #f5f5f5;
+        }
+
+        .abnormal {
+            color: #dc3545;
+            font-weight: 600;
+        }
+
+        .report-time {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 15px;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>报告图片分析</h1>
+        
+        <div class="upload-section" id="dropZone">
+            <p>点击或拖拽图片到此处上传</p>
+            <input type="file" id="fileInput" accept="image/*" style="display: none;">
+        </div>
+
+        <img id="imagePreview" alt="图片预览">
+
+        <div class="prompt-section">
+            <textarea id="promptInput" placeholder="请输入提示词，描述您想了解图片的哪些信息..."></textarea>
+        </div>
+
+        <button id="analyzeBtn" disabled>分析图片</button>
+
+        <div class="loading">
+            <div class="spinner"></div>
+            <p>正在分析中...</p>
+        </div>
+
+        <div class="result-section" id="resultSection"></div>
+    </div>
+
+    <script type="module">
+        import OpenAI from 'https://cdn.jsdelivr.net/npm/openai@4.28.0/+esm';
+        const API_KEY = 'sk-501821f6b1644f0e8840663eb9957778'; // 需要填入实际的API密钥
+
+        const openai = new OpenAI({
+            baseURL: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+            apiKey: API_KEY,
+            dangerouslyAllowBrowser: true
+        });
+
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const imagePreview = document.getElementById('imagePreview');
+        const promptInput = document.getElementById('promptInput');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const loading = document.querySelector('.loading');
+        const resultSection = document.getElementById('resultSection');
+
+        // 处理文件拖放
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.style.borderColor = '#007bff';
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.style.borderColor = '#ddd';
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.style.borderColor = '#ddd';
+            const file = e.dataTransfer.files[0];
+            handleFile(file);
+        });
+
+        // 处理点击上传
+        dropZone.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            handleFile(file);
+        });
+
+        // 处理文件
+        function handleFile(file) {
+            if (!file || !file.type.startsWith('image/')) {
+                alert('请选择有效的图片文件！');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                imagePreview.src = e.target.result;
+                imagePreview.style.display = 'block';
+                analyzeBtn.disabled = false;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // 将图片转换为base64
+        function getBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => {
+                    const base64String = reader.result.split(',')[1];
+                    resolve(base64String);
+                };
+                reader.onerror = error => reject(error);
+            });
+        }
+
+        // 调用DeepSeek API
+        async function analyzeImage() {
+            if (!API_KEY) {
+                alert('请先配置API密钥！');
+                return;
+            }
+
+            const file = fileInput.files[0];
+            if (!file) {
+                alert('请先选择图片！');
+                return;
+            }
+
+            const prompt = promptInput.value.trim();
+            if (!prompt) {
+                alert('请输入提示词！');
+                return;
+            }
+
+            loading.style.display = 'block';
+            analyzeBtn.disabled = true;
+            resultSection.style.display = 'none';
+
+            try {
+                const base64Image = await getBase64(file);
+                const mimeType = file.type || 'image/jpeg';
+                const completion = await openai.chat.completions.create({
+                    model: 'qwen-vl-max-latest',
+                    messages: [
+                        {
+                            role: 'user',
+                            content: [
+                                {
+                                    type: 'text',
+                                    text: prompt
+                                },
+                                {
+                                    type: 'image_url',
+                                    image_url: {
+                                        url: `data:${mimeType};base64,${base64Image}`
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                    
+                });
+
+                resultSection.innerHTML = `<h3>分析结果：</h3><pre>${JSON.stringify(completion.choices[0].message.content, null, 2)}</pre>`;
+                resultSection.style.display = 'block';
+            } catch (error) {
+                let errorMessage = '抱歉，发生了错误。';
+                if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
+                    errorMessage = '网络连接失败，请检查您的网络连接并重试。';
+                } else if (error.status === 401) {
+                    errorMessage = 'API密钥无效或已过期。';
+                } else if (error.status >= 500) {
+                    errorMessage = '服务器响应错误，请稍后重试。';
+                }
+                alert(errorMessage);
+                console.error('API调用错误：', error);
+            } finally {
+                loading.style.display = 'none';
+                analyzeBtn.disabled = false;
+            }
+        }
+
+        analyzeBtn.addEventListener('click', analyzeImage);
+    </script>
+</body>
+</html>

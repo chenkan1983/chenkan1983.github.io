@@ -15,9 +15,9 @@ document.addEventListener('DOMContentLoaded', () => {
         preserveDrawingBuffer: true,
     })
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    console.log(window.devicePixelRatio);
+    
     renderer.setSize(window.innerWidth, window.innerHeight);
-    console.log(renderer.domElement.width, renderer.domElement.height);
+    
     document.body.appendChild(renderer.domElement);
 
     const mouse = new THREE.Vector2();

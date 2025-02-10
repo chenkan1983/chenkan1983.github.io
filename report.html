@@ -61,7 +61,6 @@
                     return;
                 }
             } catch (error) {
-                console.error('登录验证失败:', error);
                 window.location.href = 'loginReport.html';
                 return;
             }
@@ -379,7 +378,7 @@
                                         reportContent.innerHTML = `<pre>${content}</pre>`;
                                         
                                     } catch (error) {
-                                        console.error('处理异常指标时出错:', error);
+        
                                         alert('处理异常指标时发生错误，请重试！');
                                     } finally {
                                         hideLoading();
@@ -579,7 +578,7 @@
                                 else if (selectedType === 'export_excel') {
                                     showLoading();
                                     try {
-                                        console.log('开始导出Excel...');
+
                                         
                                         // 验证 xlsx-style 是否正确加载
                                         if (typeof XLSX === 'undefined' || typeof XLSX.utils === 'undefined') {
@@ -605,13 +604,13 @@
                                                     : report.report_data;
                                                 
                                                 if (!Array.isArray(parsedData)) {
-                                                    console.error('报告数据格式错误:', parsedData);
+
                                                     return;
                                                 }
 
                                                 parsedData.forEach(item => {
                                                     if (typeof item !== 'object') {
-                                                        console.error('检查项目格式错误:', item);
+
                                                         return;
                                                     }
 
@@ -631,7 +630,7 @@
                                                     }
                                                 });
                                             } catch (parseError) {
-                                                console.error('处理报告数据时出错:', parseError);
+
                                             }
                                         });
 
@@ -707,7 +706,7 @@
                                                             ws[cellAddress].v = String(result);
                                                         }
                                                     } catch (error) {
-                                                        console.warn(`处理单元格 ${cellAddress} 时出错:`, error);
+        
                                                         ws[cellAddress].v = String(result);
                                                     }
                                                 }
@@ -720,17 +719,17 @@
                                         // 生成Excel文件并下载
                                         const fileName = 'report_data_export.xlsx';
                                         XLSX.writeFile(wb, fileName);
-                                        console.log('Excel文件生成完成');
+
 
                                     } catch (error) {
-                                        console.error('导出Excel失败:', error);
+
                                         alert('导出Excel失败: ' + error.message);
                                     } finally {
                                         hideLoading();
                                     }
                                 }
                             } catch (error) {
-                                console.error('处理查询类型选择时出错:', error);
+
                                 alert('处理查询类型时发生错误，请重试！');
                             }
                         });
@@ -739,7 +738,7 @@
                     reportContainer.textContent = '没有找到相关报告。';
                 }
             } catch (error) {
-                console.error('查询失败:', error);
+
                 alert('查询失败，请重试！');
             } finally {
                 // 隐藏加载动画
@@ -748,4 +747,4 @@
         });
     </script>
 </body>
-</html> 
+</html>
