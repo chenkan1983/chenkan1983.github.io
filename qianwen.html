@@ -157,6 +157,7 @@
         <img id="imagePreview" alt="图片预览">
 
         <div class="prompt-section">
+            <button id="defaultPromptBtn" style="margin-bottom: 10px;">使用默认提示词</button>
             <textarea id="promptInput" placeholder="请输入提示词，描述您想了解图片的哪些信息..."></textarea>
         </div>
 
@@ -187,6 +188,47 @@
         const analyzeBtn = document.getElementById('analyzeBtn');
         const loading = document.querySelector('.loading');
         const resultSection = document.getElementById('resultSection');
+        const defaultPromptBtn = document.getElementById('defaultPromptBtn');
+
+        const defaultPrompt = `请严格按以下要求处理医学报告图片：
+1. 若图片底部包含"报告时间"字段，提取并作为JSON首项，格式：
+"报告时间": "YYYY-MM-DD HH:mm:ss"
+
+2. 识别所有检查项目，需满足：
+- 保留原始项目名称（含括号内容，如中性粒细胞百分数）
+- 提取结构：{项目名}: {
+    "结果": "数值",
+    "参考范围": "x-x",
+    "单位": "..."
+    }
+- 清除结果数字后的箭头符号（如4.48↑→4.48）
+
+3. 输出要求：
+- 纯JSON格式（无Markdown标记）
+- 仅包含图片中实际存在的内容
+- 数值和单位严格按报告原文
+- 禁止列标题、翻译、推测或补充内容
+
+4. 无报告时间时，直接以检查项目开头，不添加"报告时间"字段
+
+正确格式示例：
+{
+    "报告时间": "1970-01-01 00:00:00",
+    "白细胞计数": {
+        "结果": "4.48",
+        "参考范围": "3.50-9.50",
+        "单位": "10^9/L"
+    },
+    "中性粒细胞百分数": {
+        "结果": "62.3",
+        "参考范围": "40.0-75.0",
+        "单位": "%"
+    }
+}`;
+
+            defaultPromptBtn.addEventListener('click', () => {
+                promptInput.value = defaultPrompt;
+            });
 
         // 处理文件拖放
         dropZone.addEventListener('dragover', (e) => {
@@ -271,7 +313,9 @@
                 const base64Image = await getBase64(file);
                 const mimeType = file.type || 'image/jpeg';
                 const completion = await openai.chat.completions.create({
-                    model: 'qwen-vl-max-latest',
+                    // model: 'qwen-vl-max-latest',
+                    model: 'qwen-omni-turbo-2025-01-19',
+                    // model: 'deepseek-v3',
                     messages: [
                         {
                             role: 'user',
@@ -292,7 +336,50 @@
                     
                 });
 
-                resultSection.innerHTML = `<h3>分析结果：</h3><pre>${JSON.stringify(completion.choices[0].message.content, null, 2)}</pre>`;
+                // 清理API返回的内容，移除markdown格式符号
+                let content = completion.choices[0].message.content;
+                content = content.replace(/```json\n|```/g, '').trim();
+                const result = JSON.parse(content);
+                let tableHtml = `
+                    <h3>检验报告分析结果</h3>
+                    <div class="report-time">报告时间：${result['报告时间']}</div>
+                    <table class="result-table">
+                        <thead>
+                            <tr>
+                                <th>检测项目</th>
+                                <th>结果</th>
+                                <th>参考范围</th>
+                                <th>单位</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                for (const [key, value] of Object.entries(result)) {
+                    if (key === '报告时间') continue;
+                    
+                    // 检查是否超出参考范围
+                    let isAbnormal = false;
+                    if (value.参考范围) {
+                        const [min, max] = value.参考范围.split('-').map(Number);
+                        const result = Number(value.结果);
+                        if (!isNaN(min) && !isNaN(max) && !isNaN(result)) {
+                            isAbnormal = result < min || result > max;
+                        }
+                    }
+
+                    tableHtml += `
+                        <tr>
+                            <td>${key}</td>
+                            <td class="${isAbnormal ? 'abnormal' : ''}">${value.结果}</td>
+                            <td>${value.参考范围 || '-'}</td>
+                            <td>${value.单位 || '-'}</td>
+                        </tr>
+                    `;
+                }
+
+                tableHtml += '</tbody></table>';
+                resultSection.innerHTML = tableHtml;
                 resultSection.style.display = 'block';
             } catch (error) {
                 let errorMessage = '抱歉，发生了错误。';

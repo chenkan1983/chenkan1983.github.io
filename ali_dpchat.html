@@ -122,12 +122,13 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script type="module">
         import OpenAI from 'https://cdn.jsdelivr.net/npm/openai@4.28.0/+esm';
-        const API_KEY = 'sk-3aabe107dfa1435196618c6c04e4ae4f'; // 需要填入实际的API密钥
+        const API_KEY = 'sk-501821f6b1644f0e8840663eb9957778'; // 需要填入实际的API密钥
 
         const openai = new OpenAI({
-            baseURL: 'https://api.deepseek.com',
+            baseURL: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
             apiKey: API_KEY,
             dangerouslyAllowBrowser: true
         });
@@ -140,7 +141,7 @@
         function addMessage(content, isUser) {
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
-            messageDiv.textContent = content;
+            messageDiv.innerHTML = isUser ? content : marked.parse(content);
             chatHistory.appendChild(messageDiv);
             chatHistory.scrollTop = chatHistory.scrollHeight;
         }
@@ -156,7 +157,7 @@
 
             try {
                 const completion = await openai.chat.completions.create({
-                    model: 'deepseek-chat',
+                    model: 'deepseek-v3',
                     messages: [{
                         role: 'user',
                         content: message

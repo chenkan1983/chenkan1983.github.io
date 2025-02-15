@@ -173,7 +173,7 @@
                     }`;
                 const result = await callGLM4V(base64Image, prompt);
 
-
+                console.log(result);
                 // 清理返回的内容，移除多余的反引号
                 const cleanedResult = result.replace(/```json|```/g, '').trim();
 

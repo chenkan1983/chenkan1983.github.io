@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BaiChuan对话</title>
+    <title>DeepSeek-R1对话</title>
     <style>
         body {
             margin: 0;
@@ -107,7 +107,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>BaiChuan对话</h1>
+        <h1>DeepSeek-R1对话</h1>
         
         <div class="chat-history" id="chatHistory"></div>
 
@@ -122,15 +122,9 @@
         </div>
     </div>
 
-    <script type="module">
-        import OpenAI from 'https://cdn.jsdelivr.net/npm/openai@4.28.0/+esm';
-        const API_KEY = 'sk-8c5858b769dd47edcfadade22293fa64'; // 需要填入实际的API密钥
-
-        const openai = new OpenAI({
-            baseURL: 'https://api.baichuan-ai.com/v1',
-            apiKey: API_KEY,
-            dangerouslyAllowBrowser: true
-        });
+    <script>
+        const API_KEY = '9PIO9XXpWImjJPyyeOI2423izqTqEE4MszjC1E5oSyX05YKq0ZKaJQQJ99BBACHYHv6XJ3w3AAAAACOGKjVx'; // 需要填入实际的API密钥
+        const API_URL = 'https://ai-zx137756926ai414623247022.services.ai.azure.com/models/chat/completions?api-version=2024-05-01-preview';
 
         const chatHistory = document.getElementById('chatHistory');
         const userInput = document.getElementById('userInput');
@@ -155,16 +149,28 @@
             loading.style.display = 'block';
 
             try {
-                const completion = await openai.chat.completions.create({
-                    model: 'Baichuan2-Turbo',
-                    messages: [{
-                        role: 'user',
-                        content: message
-                    }]
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'api-key': API_KEY
+                    },
+                    body: JSON.stringify({
+                        model: 'DeepSeek-R1',
+                        messages: [{
+                            role: 'user',
+                            content: message
+                        }]
+                    })
                 });
 
-                const response = completion.choices[0].message.content;
-                addMessage(response, false);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                const botResponse = data.choices[0].message.content;
+                addMessage(botResponse, false);
             } catch (error) {
                 let errorMessage = '抱歉，发生了错误。';
                 if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
