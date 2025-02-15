@@ -19,9 +19,17 @@
         <div class="image-container">
             <img id="imagePreview" alt="图片预览">
         </div>
-        <div class="button-group">
-            <button class="action-btn parse-report">解析报告</button>
-            <button class="action-btn upload-report" style="display: none;">上传数据</button>
+        <div class="model-select-container" style="margin: 20px 0; display: flex; align-items: center; gap: 15px;">
+            <select id="modelSelect" style="flex: 0 0 50%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; background-color: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                <option value="glm-4v-plus">智谱GLM-4V</option>
+                <option value="deepseek-ai/deepseek-vl2">deepseek-vl2</option>
+                <option value="Qwen/Qwen2-VL-72B-Instruct">Qwen2-VL-72B-Instruct</option>
+                <option value="Pro/Qwen/Qwen2-VL-7B-Instruct">Qwen2-VL-7B-Instruct</option>
+            </select>
+            <button class="action-btn parse-report" style="flex: 0 0 50%; margin: 0; background-color: #007bff; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: background-color 0.3s;">解析报告</button>
+        </div>
+        <div class="button-group" style="margin-top: 20px;">
+            <button class="action-btn upload-report" style="display: none; width: 100%; background-color: #28a745; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: background-color 0.3s;">上传数据</button>
         </div>
         <div class="parsed-report" style="display: none;"></div>
     </div>
@@ -34,8 +42,10 @@
         const supabase = createClient(supabaseUrl, supabaseKey);
 
         // 添加API配置
-        const API_KEY = '8f60f0afcc894298a2ecc6ad75a4865f.BjULWUBcMIjFuFu8';
-        const API_URL = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
+        const ZP_API_KEY = '8f60f0afcc894298a2ecc6ad75a4865f.BjULWUBcMIjFuFu8';
+        const ZP_API_URL = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
+        const SF_API_KEY = 'sk-hosugqnlidxwyeenzeoeeiunljmxjceexbhscbxldnrturcv';
+        const SF_API_URL = 'https://api.siliconflow.cn/v1/chat/completions';
 
         // 检查登录状态
         window.onload = function () {
@@ -69,33 +79,45 @@
             });
         }
 
-        // 调用智谱AI的API
-        async function callGLM4V(base64Image, prompt) {
+        // 调用AI模型API
+        async function callAIModel(base64Image, prompt, modelType) {
             try {
-                const response = await fetch(API_URL, {
+                const isZhipuModel = modelType === 'glm-4v-plus';
+                const apiUrl = isZhipuModel ? ZP_API_URL : SF_API_URL;
+                const apiKey = isZhipuModel ? ZP_API_KEY : SF_API_KEY;
+
+                // 准备请求体
+                const requestBody = {
+                    model: modelType,
+                    messages: [{
+                        role: 'user',
+                        content: [
+                            {
+                                type: 'text',
+                                text: prompt
+                            },
+                            {
+                                type: 'image_url',
+                                image_url: {
+                                    url: `data:image/jpeg;base64,${base64Image}`
+                                }
+                            }
+                        ]
+                    }]
+                };
+
+                // 如果是硅流科技的模型，添加max_tokens参数
+                if (!isZhipuModel) {
+                    requestBody.max_tokens = 4096;
+                }
+
+                const response = await fetch(apiUrl, {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${API_KEY}`,
+                        'Authorization': `Bearer ${apiKey}`,
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({
-                        model: 'glm-4v-plus',
-                        messages: [{
-                            role: 'user',
-                            content: [
-                                {
-                                    type: 'text',
-                                    text: prompt
-                                },
-                                {
-                                    type: 'image_url',
-                                    image_url: {
-                                        url: `data:image/jpeg;base64,${base64Image}`
-                                    }
-                                }
-                            ]
-                        }]
-                    })
+                    body: JSON.stringify(requestBody)
                 });
 
                 if (!response.ok) {
@@ -171,7 +193,8 @@
                             "单位": "%"
                         }
                     }`;
-                const result = await callGLM4V(base64Image, prompt);
+                const modelType = document.getElementById('modelSelect').value;
+                const result = await callAIModel(base64Image, prompt, modelType);
 
                 console.log(result);
                 // 清理返回的内容，移除多余的反引号
@@ -193,7 +216,7 @@
                     for (const [key, value] of Object.entries(parsedData)) {
                         if (key === '报告时间') {
                             localStorage.setItem('reportTime', value);
-                        } else if (key === '检查项目') {
+                        } else if (key === '检查项目' || key === '实验项目') {
                             const checkItems = value; // 获取检查项目
                             for (const [itemKey, itemValue] of Object.entries(checkItems)) {
                                 const reportItem = {
