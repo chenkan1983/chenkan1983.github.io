@@ -242,6 +242,33 @@
             position: relative;
         }
 
+        /* 统一图片和PDF容器样式 */
+        .image-container, #pdfPreview {
+            max-width: 90%;
+            max-height: 70vh;
+            margin: 20px auto;
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            overflow: auto;
+            background: #f8f9fa;
+        }
+
+        /* 移动端适配 */
+        @media (max-width: 768px) {
+            .image-container, #pdfPreview {
+                max-width: 95%;
+                max-height: 60vh;
+            }
+        }
+
+        /* 保持PDF内容居中 */
+        #pdfContainer {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
     </style>
 </head>
 
