@@ -58,23 +58,18 @@
         }
 
         .image-container {
+            overflow: auto;
+            max-height: 80vh;
+            width: 100%;
             position: relative;
-            margin: 20px 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background: #f8f9fa;
-            border-radius: 8px;
-            min-height: 300px;
         }
 
         #imagePreview {
-            max-width: 100%;
-            max-height: 70vh;
-            object-fit: contain;
-            transition: all 0.3s ease;
-            border-radius: 6px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transform: scale(2);
+            transform-origin: 0 0;
+            min-width: 50%;
+            min-height: 50%;
+            transition: transform 0.3s ease;
         }
 
         /* PC端优化 */
@@ -102,12 +97,6 @@
             #imagePreview {
                 max-height: 80vh;
             }
-        }
-
-        /* 添加悬停动画 */
-        #imagePreview:hover {
-            transform: scale(1.02);
-            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
         }
 
         /* 加载完成前保持容器高度 */
@@ -253,24 +242,6 @@
             position: relative;
         }
 
-        #imagePreview:hover, #pdfPreview:hover {
-            border-color: #007bff;
-            background-color: #f8f9fa;
-        }
-
-        /* 添加类型提示文字 */
-        #imagePreview::after, #pdfPreview::after {
-            content: "点击选择图片或PDF文件";
-            position: absolute;
-            bottom: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            color: #666;
-            font-size: 14px;
-            background: rgba(255, 255, 255, 0.9);
-            padding: 5px 10px;
-            border-radius: 4px;
-        }
     </style>
 </head>
 
@@ -402,6 +373,20 @@
             dangerouslyAllowBrowser: true
         });
 
+        // 添加显示控制函数
+        function togglePreview(type) {
+            const imageContainer = document.querySelector('.image-container');
+            const pdfPreview = document.getElementById('pdfPreview');
+            
+            if (type === 'pdf') {
+                imageContainer.style.display = 'none';
+                pdfPreview.style.display = 'block';
+            } else {
+                imageContainer.style.display = 'block';
+                pdfPreview.style.display = 'none';
+            }
+        }
+
         // 统一文件选择处理函数
         function createFileInputHandler() {
             return function(e) {
@@ -514,6 +499,13 @@
             
             imagePreview.addEventListener('click', createFileInputHandler());
             pdfPreview.addEventListener('click', createFileInputHandler());
+
+            // 添加初始化控制
+            if (localStorage.getItem('selectedPdf')) {
+                togglePreview('pdf');
+            } else {
+                togglePreview('image');
+            }
         }
 
         // 将文件转换为base64
@@ -532,13 +524,10 @@
         // 处理PDF文件
         async function handlePdfFile(pdfData) {
             try {
+                togglePreview('pdf'); // 显示PDF容器
                 console.log('开始处理PDF文件');
                 const pdfPreview = document.getElementById('pdfPreview');
                 const imagePreview = document.getElementById('imagePreview');
-
-                // 先隐藏预览区域
-                pdfPreview.style.display = 'none';
-                imagePreview.style.display = 'none';
 
                 // 第一步：上传PDF到阿里云
                 const response = await fetch(pdfData);
@@ -625,6 +614,7 @@
                 // 在文件上传成功后隐藏加载动画
                 hideLoading();
             } catch (error) {
+                togglePreview('image'); // 出错时恢复显示图片容器
                 hideLoading(); // 错误时也隐藏加载动画
                 console.error('PDF处理错误:', error);
                 alert(`PDF处理失败: ${error.message}`);
