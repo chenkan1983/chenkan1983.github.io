@@ -7,25 +7,6 @@
     <title>录入报告</title>
     <link rel="stylesheet" href="./css/report.css">
     <style>
-        .file-info-panel {
-            padding: 10px;
-            background-color: #f8f9fa;
-            border-bottom: 1px solid #ddd;
-            margin-bottom: 10px;
-            border-radius: 4px;
-        }
-
-        .file-info-item {
-            margin: 5px 0;
-            font-size: 14px;
-        }
-
-        .file-info-label {
-            font-weight: 600;
-            margin-right: 10px;
-            color: #666;
-        }
-
         #pdfPreview {
             height: 60vh;
             max-width: 100%;
@@ -34,23 +15,17 @@
             border: 1px solid #ddd;
             border-radius: 8px;
             overflow: auto;
+            cursor: pointer;
+            transition: all 0.2s ease;
         }
 
-        .file-info-panel {
-            padding: 10px;
-            background-color: #f8f9fa;
-            border-bottom: 1px solid #ddd;
+        #pdfPreview:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transform: translateY(-2px);
         }
 
-        .file-info-item {
-            margin: 5px 0;
-            font-size: 14px;
-        }
-
-        .file-info-label {
-            font-weight: 600;
-            margin-right: 10px;
-            color: #666;
+        #pdfPreview:active {
+            transform: translateY(0);
         }
 
         #pdfContainer {
@@ -83,16 +58,62 @@
         }
 
         .image-container {
+            position: relative;
             margin: 20px 0;
-            text-align: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #f8f9fa;
+            border-radius: 8px;
+            min-height: 300px;
         }
 
         #imagePreview {
             max-width: 100%;
-            max-height: 400px;
-            border-radius: 8px;
-            cursor: pointer;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            max-height: 70vh;
+            object-fit: contain;
+            transition: all 0.3s ease;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        /* PC端优化 */
+        @media (min-width: 768px) {
+            #imagePreview {
+                max-width: 80%;
+                max-height: 80vh;
+            }
+        }
+
+        /* 移动端优化 */
+        @media (max-width: 767px) {
+            .image-container {
+                min-height: 200px;
+            }
+            
+            #imagePreview {
+                max-width: 95%;
+                max-height: 60vh;
+            }
+        }
+
+        /* 横屏设备优化 */
+        @media (orientation: landscape) {
+            #imagePreview {
+                max-height: 80vh;
+            }
+        }
+
+        /* 添加悬停动画 */
+        #imagePreview:hover {
+            transform: scale(1.02);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+        }
+
+        /* 加载完成前保持容器高度 */
+        #imagePreview[src=""] {
+            opacity: 0;
+            height: 0;
         }
 
         .model-select-container {
@@ -188,18 +209,78 @@
         #pdfContainer::-webkit-scrollbar-thumb:hover {
             background: #555;
         }
+
+        /* 增强加载动画效果 */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 添加加载文字 */
+        .loading-text {
+            margin-top: 20px;
+            color: #007bff;
+            font-weight: 500;
+        }
+
+        /* 统一点击区域样式 */
+        #imagePreview, #pdfPreview {
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 2px dashed #ddd;
+            position: relative;
+        }
+
+        #imagePreview:hover, #pdfPreview:hover {
+            border-color: #007bff;
+            background-color: #f8f9fa;
+        }
+
+        /* 添加类型提示文字 */
+        #imagePreview::after, #pdfPreview::after {
+            content: "点击选择图片或PDF文件";
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #666;
+            font-size: 14px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 5px 10px;
+            border-radius: 4px;
+        }
     </style>
 </head>
 
 <body>
     <div class="overlay">
         <div class="spinner"></div>
+        <div class="loading-text">请稍候...</div>
     </div>
 
     <div class="preview-container">
-       
-        <div class="loading">正在加载文件...</div>
-
         <div class="image-container">
             <img id="imagePreview" alt="图片预览" style="display: none;">
         </div>
@@ -211,7 +292,6 @@
                 <option value="glm-4v-plus">智谱GLM-4V</option>
                 <option value="deepseek-ai/deepseek-vl2">deepseek-vl2</option>
                 <option value="Qwen/Qwen2-VL-72B-Instruct">Qwen2-VL-72B-Instruct</option>
-                <option value="Pro/Qwen/Qwen2-VL-7B-Instruct">Qwen2-VL-7B-Instruct</option>
                 <option value="qwen-long">Qwen-Long(pdf)</option>
             </select>
             <button class="action-btn parse-report">解析报告</button>
@@ -223,7 +303,7 @@
             if (selectedPdf) {
                 modelSelect.value = 'qwen-long';
             } else {
-                modelSelect.value = 'Qwen2-VL-72B-Instruct';
+                modelSelect.value = 'Qwen/Qwen2-VL-72B-Instruct';
             }
         </script>
         <div class="button-group">
@@ -265,6 +345,7 @@
                     - 仅包含图片中实际存在的内容
                     - 数值严格按报告原文
                     - 禁止列标题、翻译、推测或补充内容
+                    - 如果项目名称后面有(%)，则将(%)改为百分数三个字
 
                     4. 无报告时间时，直接以检查项目开头，不添加"报告时间"字段
 
@@ -281,45 +362,110 @@
                         }
                     }`;
 
-        const pdfPrompt = `请严格按以下要求处理医学报告PDF文档：
-若文档包含"报告时间"字段，提取并作为JSON首项，格式：
-"报告时间": "YYYY-MM-DD HH:mm:ss"
-识别所有检查项目，需满足：
-保留原始项目名称（含括号内容，如中性粒细胞百分数）
-提取结构：{项目名}: {
-"结果": "数值",
-"参考范围": "x-x"
-}
-清除结果数字后的箭头符号（如4.48↑→4.48）
-输出要求：
-纯JSON格式（无Markdown标记）
-仅包含PDF中实际存在的内容
-数值严格按报告原文
-禁止列标题、翻译、推测或补充内容
-无报告时间时，直接以检查项目开头，不添加"报告时间"字段
-PDF处理注意事项：
-优先解析文本型PDF的原始文字层
-对扫描版PDF需执行OCR识别
-需校验表格结构定位准确性
-注意跨页表格的连续性识别
-正确格式示例：
-{
-"报告时间": "1970-01-01 00:00:00",
-"白细胞计数": {
-"结果": "4.48",
-"参考范围": "3.50-9.50"
-},
-"中性粒细胞百分数": {
-"结果": "62.3",
-"参考范围": "40.0-75.0"
-}
-}`;
+        const pdfPrompt = `请严格按以下要求处理医学报告pdf文件：
+                    1. 若文件中包含"报告时间"字段，提取并作为JSON首项，格式：
+                    "报告时间": "YYYY-MM-DD HH:mm:ss"
+
+                    2. 识别所有检查项目，需满足：
+                    - 保留原始项目名称（含括号内容，如中性粒细胞百分数）
+                    - 提取结构：{项目名}: {
+                        "结果": "数值",
+                        "参考范围": "x-x"
+                        }
+                    - 清除结果数字后的箭头符号（如4.48↑→4.48）
+
+                    3. 输出要求：
+                    - 纯JSON格式（无Markdown标记）
+                    - 仅包含文件中实际存在的内容
+                    - 数值严格按报告原文
+                    - 禁止列标题、翻译、推测或补充内容
+                    - 如果项目名称后面有(%)，则将(%)改为百分数三个字
+
+                    4. 无报告时间时，直接以检查项目开头，不添加"报告时间"字段
+
+                    正确格式示例：
+                    {
+                        "报告时间": "1970-01-01 00:00:00",
+                        "白细胞计数": {
+                            "结果": "4.48",
+                            "参考范围": "3.50-9.50"
+                        },
+                        "中性粒细胞百分数": {
+                            "结果": "62.3",
+                            "参考范围": "40.0-75.0"
+                        }
+                    }`;
 
         const openai = new OpenAI({
             baseURL: QW_API_URL,
             apiKey: QW_API_KEY,
             dangerouslyAllowBrowser: true
         });
+
+        // 统一文件选择处理函数
+        function createFileInputHandler() {
+            return function(e) {
+                const fileInput = document.createElement('input');
+                fileInput.type = 'file';
+                fileInput.accept = 'image/*, application/pdf'; // 同时接受图片和PDF
+                fileInput.style.display = 'none';
+
+                fileInput.addEventListener('change', async function(e) {
+                    const file = e.target.files[0];
+                    if (!file) return;
+
+                    // 验证文件类型
+                    const isImage = file.type.startsWith('image/');
+                    const isPDF = file.type === 'application/pdf';
+                    if (!isImage && !isPDF) {
+                        alert('请选择图片或PDF文件！');
+                        return;
+                    }
+
+                    try {
+                        showLoading();
+                        const reader = new FileReader();
+                        reader.onload = function (e) {
+                            const img = new Image();
+                            img.src = e.target.result;
+                            
+                            img.onload = () => {
+                                // 根据设备类型设置显示尺寸
+                                const isMobile = window.matchMedia("(max-width: 767px)").matches;
+                                const maxDisplayWidth = isMobile ? window.innerWidth * 0.9 : 1200;
+                                
+                                // 保持原始比例缩放
+                                const scale = Math.min(
+                                    maxDisplayWidth / img.width,
+                                    (isMobile ? window.innerHeight * 0.6 : window.innerHeight * 0.8) / img.height
+                                );
+                                
+                                const imagePreview = document.getElementById('imagePreview');
+                                imagePreview.style.width = `${img.width * scale}px`;
+                                imagePreview.style.height = `${img.height * scale}px`;
+                                imagePreview.style.opacity = 1;
+                                hideLoading();
+                            };
+                            
+                            if (isImage) {
+                                localStorage.setItem('selectedImage', e.target.result);
+                                localStorage.removeItem('selectedPdf');
+                            } else {
+                                localStorage.setItem('selectedPdf', e.target.result);
+                                localStorage.removeItem('selectedImage');
+                            }
+                            window.location.reload();
+                        };
+                        reader.readAsDataURL(file);
+                    } catch (error) {
+                        alert('文件处理失败，请重试！');
+                        hideLoading();
+                    }
+                });
+
+                fileInput.click();
+            };
+        }
 
         // 检查登录状态
         window.onload = function () {
@@ -328,7 +474,7 @@ PDF处理注意事项：
                 window.location.href = 'loginReport.html';
                 return;
             }
-
+            showLoading(); // 显示加载动画
             // 加载选中的文件
             const selectedImage = localStorage.getItem('selectedImage');
             const selectedPdf = localStorage.getItem('selectedPdf');
@@ -337,7 +483,9 @@ PDF处理注意事项：
                 const imagePreview = document.getElementById('imagePreview');
                 imagePreview.src = selectedImage;
                 imagePreview.style.display = 'block';
+                hideLoading();
             } else if (selectedPdf) {
+                
                 document.getElementById('imagePreview').style.display = 'none';
                 document.getElementById('pdfPreview').style.display = 'block';
                 
@@ -359,6 +507,13 @@ PDF处理注意事项：
             } else {
                 window.location.href = 'report.html';
             }
+
+            // 统一文件选择处理
+            const imagePreview = document.getElementById('imagePreview');
+            const pdfPreview = document.getElementById('pdfPreview');
+            
+            imagePreview.addEventListener('click', createFileInputHandler());
+            pdfPreview.addEventListener('click', createFileInputHandler());
         }
 
         // 将文件转换为base64
@@ -441,7 +596,7 @@ PDF处理注意事项：
                     
                     // 调整缩放参数为当前150%
                     const baseScale = 1.0; // 从0.7改为1.05（0.7 * 1.5 ≈ 1.05）
-                    const pageWidth = 600; // 从600改为900（600 * 1.5 = 900）
+                    const pageWidth = 650; // 从600改为900（600 * 1.5 = 900）
 
                     const viewport = page.getViewport({ scale: 1 });
                     const scale = (pageWidth / viewport.width) * baseScale;
@@ -467,10 +622,12 @@ PDF处理注意事项：
 
                 console.log('PDF渲染完成');
 
+                // 在文件上传成功后隐藏加载动画
+                hideLoading();
             } catch (error) {
+                hideLoading(); // 错误时也隐藏加载动画
                 console.error('PDF处理错误:', error);
                 alert(`PDF处理失败: ${error.message}`);
-                // 失败时保持预览区域隐藏
                 document.getElementById('pdfPreview').style.display = 'none';
             }
         }
@@ -676,44 +833,6 @@ PDF处理注意事项：
             } finally {
                 hideLoading();
             }
-        });
-
-        // 修改图片预览点击事件
-        const imagePreview = document.getElementById('imagePreview');
-        imagePreview.addEventListener('click', function () {
-            // 创建一个隐藏的文件输入框
-            const fileInput = document.createElement('input');
-            fileInput.type = 'file';
-            fileInput.accept = 'image/*';
-            fileInput.style.display = 'none';
-
-            // 添加文件选择事件处理
-            fileInput.addEventListener('change', function (e) {
-                const file = e.target.files[0];
-                if (file) {
-                    if (!file.type.startsWith('image/')) {
-                        alert('请选择图片文件！');
-                        return;
-                    }
-
-                    const reader = new FileReader();
-                    reader.onload = function (e) {
-                        // 更新图片预览
-                        imagePreview.src = e.target.result;
-                        // 保存选中的图片到本地存储
-                        localStorage.setItem('selectedImage', e.target.result);
-                    };
-
-                    reader.onerror = function () {
-                        alert('图片加载失败，请重试！');
-                    };
-
-                    reader.readAsDataURL(file);
-                }
-            });
-
-            // 触发文件选择对话框
-            fileInput.click();
         });
     </script>
 </body>
