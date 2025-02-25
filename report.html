@@ -18,7 +18,7 @@
         <div class="logout-container">
             <button id="logoutButton">退出登录</button>
         </div>
-        <input type="file" id="fileInput" accept="image/*" style="display: none;">
+        <input type="file" id="fileInput" accept="image/*,application/pdf" style="display: none;">
         <div class="upload-container">
             <label for="fileInput" class="upload-btn">录入报告</label>
             <label class="query-report">查询报告</label>
@@ -86,17 +86,28 @@
         fileInput.addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (file) {
-                if (!file.type.startsWith('image/')) {
-                    alert('请选择图片文件！');
+                if (file.type.startsWith('image/')) {
+                    // 处理图片文件
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        localStorage.removeItem('selectedPdf')
+                        localStorage.setItem('selectedImage', e.target.result);
+                        window.location.href = 'inputReport.html';
+                    };
+                    reader.readAsDataURL(file);
+                } else if (file.type === 'application/pdf') {
+                    // 处理PDF文件
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        localStorage.removeItem('selectedImage')
+                        localStorage.setItem('selectedPdf', e.target.result);
+                        window.location.href = 'inputReport.html';
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    alert('请选择图片或PDF文件！');
                     return;
                 }
-                // 存储选中的文件到 localStorage
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    localStorage.setItem('selectedImage', e.target.result);
-                    window.location.href = 'inputReport.html';
-                };
-                reader.readAsDataURL(file);
             }
         });
 

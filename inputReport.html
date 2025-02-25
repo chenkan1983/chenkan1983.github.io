@@ -6,36 +6,235 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>录入报告</title>
     <link rel="stylesheet" href="./css/report.css">
+    <style>
+        .file-info-panel {
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 10px;
+            border-radius: 4px;
+        }
+
+        .file-info-item {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+
+        .file-info-label {
+            font-weight: 600;
+            margin-right: 10px;
+            color: #666;
+        }
+
+        #pdfPreview {
+            height: 60vh;
+            max-width: 100%;
+            display: none;
+            margin: 10px auto;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: auto;
+        }
+
+        .file-info-panel {
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .file-info-item {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+
+        .file-info-label {
+            font-weight: 600;
+            margin-right: 10px;
+            color: #666;
+        }
+
+        #pdfContainer {
+            min-width: max-content;
+            padding: 10px;
+            display: flex;
+            gap: 30px;
+        }
+
+        .pdf-page-container {
+            position: relative;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            background: white;
+            flex-shrink: 0;
+            margin: 5px;
+        }
+
+        #pdfContainer canvas {
+            transform: none;
+            margin: 10px;
+        }
+
+        .preview-container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin: 20px auto;
+            max-width: 800px;
+        }
+
+        .image-container {
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        #imagePreview {
+            max-width: 100%;
+            max-height: 400px;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .model-select-container {
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        #modelSelect {
+            flex: 0 0 50%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            background-color: #fff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            font-size: 14px;
+        }
+
+        .action-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .action-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .parse-report {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .upload-report {
+            background-color: #28a745;
+            color: white;
+            width: 100%;
+        }
+
+        .parsed-report {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 6px;
+            border: 1px solid #dee2e6;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        /* 添加触摸滚动支持 */
+        @media (hover: none) and (pointer: coarse) {
+            #pdfContainer {
+                -webkit-overflow-scrolling: touch;
+                overflow-x: auto;
+            }
+        }
+
+        /* 优化按钮组位置 */
+        .button-group {
+            margin-top: 20px;
+            position: sticky;
+            bottom: 20px;
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        /* 自定义滚动条 */
+        #pdfContainer::-webkit-scrollbar {
+            height: 8px;
+            width: 8px;
+        }
+
+        #pdfContainer::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        #pdfContainer::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+
+        #pdfContainer::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+    </style>
 </head>
 
 <body>
-    <!-- 添加遮罩和加载动画 -->
     <div class="overlay">
         <div class="spinner"></div>
     </div>
 
     <div class="preview-container">
-        <div class="loading">正在加载图片...</div>
+       
+        <div class="loading">正在加载文件...</div>
+
         <div class="image-container">
-            <img id="imagePreview" alt="图片预览">
+            <img id="imagePreview" alt="图片预览" style="display: none;">
         </div>
-        <div class="model-select-container" style="margin: 20px 0; display: flex; align-items: center; gap: 15px;">
-            <select id="modelSelect" style="flex: 0 0 50%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; background-color: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <div id="pdfPreview">
+            <div id="pdfContainer"></div>
+        </div>
+        <div class="model-select-container">
+            <select id="modelSelect">
                 <option value="glm-4v-plus">智谱GLM-4V</option>
                 <option value="deepseek-ai/deepseek-vl2">deepseek-vl2</option>
                 <option value="Qwen/Qwen2-VL-72B-Instruct">Qwen2-VL-72B-Instruct</option>
                 <option value="Pro/Qwen/Qwen2-VL-7B-Instruct">Qwen2-VL-7B-Instruct</option>
+                <option value="qwen-long">Qwen-Long(pdf)</option>
             </select>
-            <button class="action-btn parse-report" style="flex: 0 0 50%; margin: 0; background-color: #007bff; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: background-color 0.3s;">解析报告</button>
+            <button class="action-btn parse-report">解析报告</button>
         </div>
-        <div class="button-group" style="margin-top: 20px;">
-            <button class="action-btn upload-report" style="display: none; width: 100%; background-color: #28a745; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: background-color 0.3s;">上传数据</button>
+        <script>
+            // 根据文件类型设置默认模型
+            const modelSelect = document.getElementById('modelSelect');
+            const selectedPdf = localStorage.getItem('selectedPdf');
+            if (selectedPdf) {
+                modelSelect.value = 'qwen-long';
+            } else {
+                modelSelect.value = 'Qwen2-VL-72B-Instruct';
+            }
+        </script>
+        <div class="button-group">
+            <button class="action-btn upload-report" style="display: none;">上传数据</button>
         </div>
         <div class="parsed-report" style="display: none;"></div>
     </div>
 
     <script type="module">
         import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+        import OpenAI from 'https://cdn.jsdelivr.net/npm/openai@4.28.0/+esm';
 
         const supabaseUrl = 'https://faqeootsprjlssgmuzyq.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhcWVvb3RzcHJqbHNzZ211enlxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzc2MDYzNDAsImV4cCI6MjA1MzE4MjM0MH0.y7Sldz60c-pnMLtR-LF8BCv297xe_EeTNIPWDBa7mec';
@@ -46,119 +245,10 @@
         const ZP_API_URL = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
         const SF_API_KEY = 'sk-hosugqnlidxwyeenzeoeeiunljmxjceexbhscbxldnrturcv';
         const SF_API_URL = 'https://api.siliconflow.cn/v1/chat/completions';
+        const QW_API_KEY = 'sk-501821f6b1644f0e8840663eb9957778';
+        const QW_API_URL = 'https://dashscope.aliyuncs.com/compatible-mode/v1';
 
-        // 检查登录状态
-        window.onload = function () {
-            const email = localStorage.getItem('email');
-            if (!email) {
-                window.location.href = 'loginReport.html';
-                return;
-            }
-
-            // 加载选中的图片
-            const selectedImage = localStorage.getItem('selectedImage');
-            if (selectedImage) {
-                const imagePreview = document.getElementById('imagePreview');
-                imagePreview.src = selectedImage;
-                imagePreview.style.display = 'block';
-            } else {
-                window.location.href = 'report.html';
-            }
-        }
-
-        // 将图片转换为base64
-        function getBase64(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.readAsDataURL(file);
-                reader.onload = () => {
-                    const base64String = reader.result.split(',')[1];
-                    resolve(base64String);
-                };
-                reader.onerror = error => reject(error);
-            });
-        }
-
-        // 调用AI模型API
-        async function callAIModel(base64Image, prompt, modelType) {
-            try {
-                const isZhipuModel = modelType === 'glm-4v-plus';
-                const apiUrl = isZhipuModel ? ZP_API_URL : SF_API_URL;
-                const apiKey = isZhipuModel ? ZP_API_KEY : SF_API_KEY;
-
-                // 准备请求体
-                const requestBody = {
-                    model: modelType,
-                    messages: [{
-                        role: 'user',
-                        content: [
-                            {
-                                type: 'text',
-                                text: prompt
-                            },
-                            {
-                                type: 'image_url',
-                                image_url: {
-                                    url: `data:image/jpeg;base64,${base64Image}`
-                                }
-                            }
-                        ]
-                    }]
-                };
-
-                // 如果是硅流科技的模型，添加max_tokens参数
-                if (!isZhipuModel) {
-                    requestBody.max_tokens = 4096;
-                }
-
-                const response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${apiKey}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(requestBody)
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                const data = await response.json();
-                return data.choices[0].message.content;
-            } catch (error) {
-                throw error;
-            }
-        }
-
-        // 显示/隐藏加载动画
-        const overlay = document.querySelector('.overlay');
-        function showLoading() {
-            overlay.style.display = 'flex';
-        }
-
-        function hideLoading() {
-            overlay.style.display = 'none';
-        }
-
-        // 解析报告按钮点击事件
-        const parseReportButton = document.querySelector('.parse-report');
-        const parsedReportContainer = document.querySelector('.parsed-report');
-
-        parseReportButton.addEventListener('click', async function () {
-            const selectedImage = localStorage.getItem('selectedImage');
-            if (!selectedImage) {
-                alert('请先选择图片！');
-                return;
-            }
-
-            try {
-                showLoading();
-                // 将 base64 图片数据转换为 Blob
-                const response = await fetch(selectedImage);
-                const blob = await response.blob();
-                const base64Image = await getBase64(blob);
-                const prompt = `请严格按以下要求处理医学报告图片：
+        const imagePrompt = `请严格按以下要求处理医学报告图片：
                     1. 若图片底部包含"报告时间"字段，提取并作为JSON首项，格式：
                     "报告时间": "YYYY-MM-DD HH:mm:ss"
 
@@ -190,62 +280,355 @@
                             "参考范围": "40.0-75.0"
                         }
                     }`;
-                const modelType = document.getElementById('modelSelect').value;
-                const result = await callAIModel(base64Image, prompt, modelType);
 
-                console.log(result);
-                // 清理返回的内容，移除多余的反引号
+        const pdfPrompt = `请严格按以下要求处理医学报告PDF文档：
+若文档包含"报告时间"字段，提取并作为JSON首项，格式：
+"报告时间": "YYYY-MM-DD HH:mm:ss"
+识别所有检查项目，需满足：
+保留原始项目名称（含括号内容，如中性粒细胞百分数）
+提取结构：{项目名}: {
+"结果": "数值",
+"参考范围": "x-x"
+}
+清除结果数字后的箭头符号（如4.48↑→4.48）
+输出要求：
+纯JSON格式（无Markdown标记）
+仅包含PDF中实际存在的内容
+数值严格按报告原文
+禁止列标题、翻译、推测或补充内容
+无报告时间时，直接以检查项目开头，不添加"报告时间"字段
+PDF处理注意事项：
+优先解析文本型PDF的原始文字层
+对扫描版PDF需执行OCR识别
+需校验表格结构定位准确性
+注意跨页表格的连续性识别
+正确格式示例：
+{
+"报告时间": "1970-01-01 00:00:00",
+"白细胞计数": {
+"结果": "4.48",
+"参考范围": "3.50-9.50"
+},
+"中性粒细胞百分数": {
+"结果": "62.3",
+"参考范围": "40.0-75.0"
+}
+}`;
+
+        const openai = new OpenAI({
+            baseURL: QW_API_URL,
+            apiKey: QW_API_KEY,
+            dangerouslyAllowBrowser: true
+        });
+
+        // 检查登录状态
+        window.onload = function () {
+            const email = localStorage.getItem('email');
+            if (!email) {
+                window.location.href = 'loginReport.html';
+                return;
+            }
+
+            // 加载选中的文件
+            const selectedImage = localStorage.getItem('selectedImage');
+            const selectedPdf = localStorage.getItem('selectedPdf');
+
+            if (selectedImage) {
+                const imagePreview = document.getElementById('imagePreview');
+                imagePreview.src = selectedImage;
+                imagePreview.style.display = 'block';
+            } else if (selectedPdf) {
+                document.getElementById('imagePreview').style.display = 'none';
+                document.getElementById('pdfPreview').style.display = 'block';
+                
+                // 加载PDF.js
+                const script = document.createElement('script');
+                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+                document.head.appendChild(script);
+
+                script.onload = async function () {
+                    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+                    try {
+                        await handlePdfFile(selectedPdf);
+                        // 上传并渲染成功后，启用解析按钮
+                        document.querySelector('.parse-report').disabled = false;
+                    } catch (error) {
+                        console.error('PDF初始化失败:', error);
+                    }
+                };
+            } else {
+                window.location.href = 'report.html';
+            }
+        }
+
+        // 将文件转换为base64
+        function getBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => {
+                    const base64String = reader.result.split(',')[1];
+                    resolve(base64String);
+                };
+                reader.onerror = error => reject(error);
+            });
+        }
+
+        // 处理PDF文件
+        async function handlePdfFile(pdfData) {
+            try {
+                console.log('开始处理PDF文件');
+                const pdfPreview = document.getElementById('pdfPreview');
+                const imagePreview = document.getElementById('imagePreview');
+
+                // 先隐藏预览区域
+                pdfPreview.style.display = 'none';
+                imagePreview.style.display = 'none';
+
+                // 第一步：上传PDF到阿里云
+                const response = await fetch(pdfData);
+                const blob = await response.blob();
+                const file = new File([blob], 'report.pdf', { type: 'application/pdf' });
+
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('purpose', 'file-extract');
+
+                const uploadResponse = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/files', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${QW_API_KEY}`
+                    },
+                    body: formData
+                });
+
+                if (!uploadResponse.ok) {
+                    throw new Error(`上传失败: ${uploadResponse.status}`);
+                }
+
+                const data = await uploadResponse.json();
+                console.log('文件上传成功:', data);
+
+                // 存储文件ID
+                const fileIdElement = document.createElement('div');
+                fileIdElement.id = 'fileId';
+                fileIdElement.textContent = data.id;
+                fileIdElement.style.display = 'none';
+                document.body.appendChild(fileIdElement);
+
+                // 第二步：上传成功后显示预览
+                pdfPreview.style.display = 'block';
+                
+                // 加载并渲染PDF
+                const loadingTask = pdfjsLib.getDocument(pdfData);
+                const pdf = await loadingTask.promise;
+                
+                // 清空容器
+                const pdfContainer = document.getElementById('pdfContainer');
+                pdfContainer.innerHTML = '';
+
+                // 渲染所有页面
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    
+                    // 创建页面容器
+                    const pageContainer = document.createElement('div');
+                    pageContainer.className = 'pdf-page-container';
+                    
+                    // 创建canvas
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    
+                    // 调整缩放参数为当前150%
+                    const baseScale = 1.0; // 从0.7改为1.05（0.7 * 1.5 ≈ 1.05）
+                    const pageWidth = 600; // 从600改为900（600 * 1.5 = 900）
+
+                    const viewport = page.getViewport({ scale: 1 });
+                    const scale = (pageWidth / viewport.width) * baseScale;
+                    const scaledViewport = page.getViewport({ scale: scale });
+                    
+                    // 调整canvas尺寸
+                    canvas.width = scaledViewport.width;
+                    canvas.height = scaledViewport.height;
+                    canvas.style.width = scaledViewport.width + 'px';
+                    canvas.style.height = scaledViewport.height + 'px';
+                    context.scale(scale, scale);
+
+                    // 渲染到canvas
+                    await page.render({
+                        canvasContext: context,
+                        viewport: scaledViewport
+                    }).promise;
+
+                    // 添加到容器
+                    pageContainer.appendChild(canvas);
+                    pdfContainer.appendChild(pageContainer);
+                }
+
+                console.log('PDF渲染完成');
+
+            } catch (error) {
+                console.error('PDF处理错误:', error);
+                alert(`PDF处理失败: ${error.message}`);
+                // 失败时保持预览区域隐藏
+                document.getElementById('pdfPreview').style.display = 'none';
+            }
+        }
+
+        // 调用AI模型API
+        async function callAIModel(base64Image, prompt, modelType) {
+            try {
+                if (modelType === 'qwen-long') {
+                    const fileId = document.getElementById('fileId').textContent;
+                    if (!fileId) {
+                        throw new Error('未找到文件ID');
+                    }
+
+                    const completion = await openai.chat.completions.create({
+                        model: modelType,
+                        messages: [
+                            {
+                                role: 'system',
+                                content: 'you are a helpful assistant.'
+                            },
+                            {
+                                role: 'system',
+                                content: `fileid://${fileId}`
+                            },
+                            {
+                                role: 'user',
+                                content: prompt
+                            }
+                        ]
+                    });
+
+                    return completion.choices[0].message.content;
+                } else {
+                    const isZhipuModel = modelType === 'glm-4v-plus';
+                    const apiUrl = isZhipuModel ? ZP_API_URL : SF_API_URL;
+                    const apiKey = isZhipuModel ? ZP_API_KEY : SF_API_KEY;
+
+                    const requestBody = {
+                        model: modelType,
+                        messages: [{
+                            role: 'user',
+                            content: [
+                                {
+                                    type: 'text',
+                                    text: prompt
+                                },
+                                {
+                                    type: 'image_url',
+                                    image_url: {
+                                        url: `data:image/jpeg;base64,${base64Image}`
+                                    }
+                                }
+                            ]
+                        }]
+                    };
+
+                    if (!isZhipuModel) {
+                        requestBody.max_tokens = 4096;
+                    }
+
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${apiKey}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(requestBody)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    return data.choices[0].message.content;
+                }
+            } catch (error) {
+                throw error;
+            }
+        }
+
+        // 显示/隐藏加载动画
+        const overlay = document.querySelector('.overlay');
+        function showLoading() {
+            overlay.style.display = 'flex';
+        }
+
+        function hideLoading() {
+            overlay.style.display = 'none';
+        }
+
+        // 解析报告按钮点击事件
+        const parseReportButton = document.querySelector('.parse-report');
+        const parsedReportContainer = document.querySelector('.parsed-report');
+
+        parseReportButton.addEventListener('click', async function () {
+            const selectedImage = localStorage.getItem('selectedImage');
+            const selectedPdf = localStorage.getItem('selectedPdf');
+            const modelType = document.getElementById('modelSelect').value;
+
+            if (!selectedImage && !selectedPdf) {
+                alert('请先选择文件！');
+                return;
+            }
+
+            try {
+                showLoading();
+                let result;
+                
+                if (selectedPdf) {
+                    // PDF处理流程
+                    const fileId = document.getElementById('fileId')?.textContent;
+                    if (!fileId) {
+                        throw new Error('未找到PDF文件ID');
+                    }
+                    
+                    result = await callAIModel(null, pdfPrompt, modelType);
+                } else {
+                    // 图片处理流程
+                    const response = await fetch(selectedImage);
+                    const blob = await response.blob();
+                    const base64Image = await getBase64(blob);
+                    result = await callAIModel(base64Image, imagePrompt, modelType);
+                }
+
+                // 统一结果处理逻辑
                 const cleanedResult = result.replace(/```json|```/g, '').trim();
-
-                // 尝试解析 JSON 数据
                 const parsedData = JSON.parse(cleanedResult);
 
-                // 显示返回的内容
                 parsedReportContainer.textContent = JSON.stringify(parsedData, null, 2);
                 parsedReportContainer.style.display = 'block';
 
-                // 自动将数据存入缓存
-                if (parsedData) {
-                    const existingReports = JSON.parse(localStorage.getItem('reports')) || [];
-                    const mergedReports = [...existingReports];
+                // 存储到本地缓存
+                const existingReports = JSON.parse(localStorage.getItem('reports')) || [];
+                const mergedReports = [...existingReports];
 
-                    // 遍历新报告中的每个检查项
-                    for (const [key, value] of Object.entries(parsedData)) {
-                        if (key === '报告时间') {
-                            localStorage.setItem('reportTime', value);
-                        } else if (key === '检查项目' || key === '实验项目') {
-                            const checkItems = value; // 获取检查项目
-                            for (const [itemKey, itemValue] of Object.entries(checkItems)) {
-                                const reportItem = {
-                                    [itemKey]: {
-                                        "结果": itemValue.结果,
-                                        "参考范围": itemValue.参考范围
-                                    }
-                                };
-                                mergedReports.push(reportItem);
+                for (const [key, value] of Object.entries(parsedData)) {
+                    if (key === '报告时间') {
+                        localStorage.setItem('reportTime', value);
+                    } else {
+                        const reportItem = {
+                            [key]: {
+                                "结果": value.结果,
+                                "参考范围": value.参考范围
                             }
-                        } else {
-                            const reportItem = {
-                                [key]: {
-                                    "结果": value.结果,
-                                    "参考范围": value.参考范围
-                                }
-                            };
-                            mergedReports.push(reportItem);
-                        }
+                        };
+                        mergedReports.push(reportItem);
                     }
-                    const uniqueReports = Array.from(new Map(mergedReports.map(item => [JSON.stringify(item), item])).values());
-                    mergedReports.length = 0; // 清空原数组
-                    mergedReports.push(...uniqueReports); // 将去重后的结果推入原数组
-                    // 保存合并后的报告到缓存
-                    localStorage.setItem('reports', JSON.stringify(mergedReports));
-
-                    // 显示上传报告按钮
-                    document.querySelector('.upload-report').style.display = 'block';
-                    alert('报告已解析并成功存入缓存！');
                 }
+
+                const uniqueReports = Array.from(new Map(mergedReports.map(item => [JSON.stringify(item), item])).values());
+                localStorage.setItem('reports', JSON.stringify(uniqueReports));
+                document.querySelector('.upload-report').style.display = 'block';
+                alert('报告解析成功！');
+
             } catch (error) {
-                alert('处理失败，请重试！');
+                console.error('处理失败:', error);
+                alert(`处理失败: ${error.message}`);
                 parsedReportContainer.style.display = 'none';
                 document.querySelector('.upload-report').style.display = 'none';
             } finally {

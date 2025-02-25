@@ -199,6 +199,12 @@
         </div>
 
         <div class="prompt-section">
+            <div class="model-select-container" style="margin-bottom: 10px;">
+                <select id="modelSelect">
+                    <option value="qwen-long">Qwen-Long(pdf)</option>
+                    <option value="Qwen2-VL-72B-Instruct">Qwen2-VL-72B-Instruct</option>
+                </select>
+            </div>
             <button id="defaultPromptBtn" style="margin-bottom: 10px;">使用默认提示词</button>
             <textarea id="promptInput" placeholder="请输入提示词，描述您想了解PDF的哪些信息..."></textarea>
         </div>
@@ -304,6 +310,18 @@ PDF处理注意事项：
 
         // 处理文件
         async function handleFile(file) {
+            if (!file) {
+                alert('请选择文件！');
+                return;
+            }
+
+            // 根据文件类型设置默认模型
+            if (file.type === 'application/pdf') {
+                modelSelect.value = 'qwen-long';
+            } else if (file.type.startsWith('image/')) {
+                modelSelect.value = 'Qwen2-VL-72B-Instruct';
+            }
+
             if (!file || file.type !== 'application/pdf') {
                 alert('请选择有效的PDF文件！');
                 return;
@@ -345,17 +363,61 @@ PDF处理注意事项：
                 // 使用FileReader读取文件
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    // 创建PDF嵌入对象
-                    const iframe = document.createElement('iframe');
-                    iframe.src = e.target.result;
-                    iframe.style.width = '100%';
-                    iframe.style.height = '100%';
-                    iframe.style.border = 'none';
-                    
-                    // 清空并添加新的预览
-                    const pdfContainer = document.getElementById('pdfContainer');
-                    pdfContainer.innerHTML = '';
-                    pdfContainer.appendChild(iframe);
+                    // 使用PDF.js渲染PDF
+                    const script = document.createElement('script');
+                    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+                    document.head.appendChild(script);
+
+                    script.onload = function() {
+                        // 设置worker路径
+                        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+                        // 创建canvas元素
+                        const canvas = document.createElement('canvas');
+                        canvas.style.width = '100%';
+                        canvas.style.height = '100%';
+
+                        // 清空并添加新的预览
+                        const pdfContainer = document.getElementById('pdfContainer');
+                        pdfContainer.innerHTML = '';
+                        pdfContainer.appendChild(canvas);
+
+                        // 加载并渲染PDF
+                        const loadingTask = pdfjsLib.getDocument(e.target.result);
+                        loadingTask.promise.then(function(pdf) {
+                            // 获取第一页
+                            return pdf.getPage(1);
+                        }).then(function(page) {
+                            // 设置合适的缩放比例
+                            const viewport = page.getViewport({scale: 1.0});
+                            const context = canvas.getContext('2d');
+
+                            // 根据设备像素比调整canvas尺寸
+                            const pixelRatio = window.devicePixelRatio || 1;
+                            canvas.width = viewport.width * pixelRatio;
+                            canvas.height = viewport.height * pixelRatio;
+                            canvas.style.width = viewport.width + 'px';
+                            canvas.style.height = viewport.height + 'px';
+
+                            // 配置渲染上下文
+                            context.scale(pixelRatio, pixelRatio);
+
+                            // 渲染PDF页面
+                            const renderContext = {
+                                canvasContext: context,
+                                viewport: viewport
+                            };
+                            page.render(renderContext);
+                        }).catch(function(error) {
+                            console.error('PDF渲染错误:', error);
+                            alert('PDF预览失败: ' + error.message);
+                        });
+                    };
+
+                    script.onerror = function() {
+                        console.error('PDF.js加载失败');
+                        alert('PDF预览组件加载失败，请检查网络连接');
+                    };
                 };
                 
                 // 读取文件为Data URL
@@ -412,7 +474,7 @@ PDF处理注意事项：
                 }
 
                 const completion = await openai.chat.completions.create({
-                    model: 'qwen-long',
+                    model: modelSelect.value,
                     messages: [
                         {
                             role: 'system',
