@@ -15,6 +15,9 @@
     </div>
 
     <div class="container">
+        <div class="logout-container">
+            <button id="logoutButton">退出登录</button>
+        </div>
         <input type="file" id="fileInput" accept="image/*" style="display: none;">
         <div class="upload-container">
             <label for="fileInput" class="upload-btn">录入报告</label>
@@ -36,6 +39,15 @@
         const supabase = createClient(supabaseUrl, supabaseKey);
 
         // 添加登录检查逻辑
+        // 退出登录按钮点击事件
+        document.getElementById('logoutButton').addEventListener('click', function() {
+            localStorage.removeItem('email');
+            localStorage.removeItem('password');
+            localStorage.removeItem('reports');
+            localStorage.removeItem('reportTime');
+            window.location.href = 'loginReport.html';
+        });
+
         window.onload = async function() {
             const email = localStorage.getItem('email');
             const password = localStorage.getItem('password');

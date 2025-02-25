@@ -36,14 +36,50 @@ body {
     overflow: hidden;
 }
 
+/* 退出按钮容器样式 */
+.logout-container {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+}
+
+#logoutButton {
+    padding: 8px 16px;
+    background-color: #ff4d4d;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+#logoutButton:hover {
+    background-color: #ff3333;
+}
+
 /* 上传区域 */
 .upload-container {
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 40px;  /* 增加按钮之间的间距 */
-    margin: 40px 0;  /* 增加上下边距 */
-    flex-direction: row;  /* 确保水平排列 */
+    gap: 30px;
+    margin: 120px 0 30px;  /* 增加上边距，避免与退出按钮重叠 */
+    /* background-color: red; */
+    height: 100px;
+}
+
+@media screen and (max-width: 768px) {
+    .upload-container {
+        margin: 120px 0 20px;  /* 移动端稍微减小边距 */
+        gap: 20px;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .upload-container {
+        margin: 100px 0 15px;  /* 更小屏幕进一步优化边距 */
+        gap: 12px;
+    }
 }
 
 /* 统一按钮样式 */
