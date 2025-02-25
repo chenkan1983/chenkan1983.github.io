@@ -314,6 +314,7 @@
                 const mimeType = file.type || 'image/jpeg';
                 const completion = await openai.chat.completions.create({
                     // model: 'qwen-vl-max-latest',
+                    // model: 'qwen-long',
                     model: 'qwen-omni-turbo-2025-01-19',
                     // model: 'deepseek-v3',
                     messages: [

@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>通义千问报告图片分析</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .upload-section {
+            text-align: center;
+            padding: 40px;
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .upload-section:hover {
+            border-color: #666;
+            background-color: #f9f9f9;
+        }
+
+        #pdfPreview {
+            max-width: 100%;
+            height: 400px;
+            display: none;
+            margin: 20px auto;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+
+        .file-info-panel {
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .file-info-item {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+
+        .file-info-label {
+            font-weight: 600;
+            margin-right: 10px;
+            color: #666;
+        }
+
+        #pdfContainer {
+            width: 100%;
+            height: calc(100% - 70px);
+            overflow: auto;
+        }
+
+        #pdfContainer embed {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .prompt-section {
+            margin: 20px 0;
+        }
+
+        textarea {
+            width: 100%;
+            height: 100px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .result-section {
+            margin-top: 20px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            display: none;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #fff;
+            overflow-x: auto;
+        }
+
+        .result-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        .result-table th,
+        .result-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        .result-table th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .result-table tr:hover {
+            background-color: #f5f5f5;
+        }
+
+        .abnormal {
+            color: #dc3545;
+            font-weight: 600;
+        }
+
+        .report-time {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 15px;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>报告PDF分析</h1>
+        
+        <div class="upload-section" id="dropZone">
+            <p>点击或拖拽PDF文件到此处上传</p>
+            <input type="file" id="fileInput" accept="application/pdf" style="display: none;">
+        </div>
+
+        <div id="pdfPreview" style="max-width: 100%; height: 400px; display: none; margin: 20px auto; border: 1px solid #ddd; border-radius: 8px;">
+            <div class="file-info-panel">
+                <div class="file-info-item">
+                    <span class="file-info-label">文件名:</span>
+                    <span id="fileName"></span>
+                </div>
+                <div class="file-info-item">
+                    <span class="file-info-label">文件ID:</span>
+                    <span id="fileId"></span>
+                </div>
+            </div>
+            <div id="pdfContainer" style="height: calc(100% - 70px);"></div>
+        </div>
+
+        <div class="prompt-section">
+            <button id="defaultPromptBtn" style="margin-bottom: 10px;">使用默认提示词</button>
+            <textarea id="promptInput" placeholder="请输入提示词，描述您想了解PDF的哪些信息..."></textarea>
+        </div>
+
+        <button id="analyzeBtn" disabled>分析PDF</button>
+
+        <div class="loading">
+            <div class="spinner"></div>
+            <p>正在分析中...</p>
+        </div>
+
+        <div class="result-section" id="resultSection"></div>
+    </div>
+
+    <script type="module">
+        import OpenAI from 'https://cdn.jsdelivr.net/npm/openai@4.28.0/+esm';
+        const API_KEY = 'sk-501821f6b1644f0e8840663eb9957778'; // 需要填入实际的API密钥
+
+        const openai = new OpenAI({
+            baseURL: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+            apiKey: API_KEY,
+            dangerouslyAllowBrowser: true
+        });
+
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const promptInput = document.getElementById('promptInput');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const loading = document.querySelector('.loading');
+        const resultSection = document.getElementById('resultSection');
+        const defaultPromptBtn = document.getElementById('defaultPromptBtn');
+
+        const defaultPrompt = `请严格按以下要求处理医学报告PDF文档：
+若文档包含"报告时间"字段，提取并作为JSON首项，格式：
+"报告时间": "YYYY-MM-DD HH:mm:ss"
+识别所有检查项目，需满足：
+保留原始项目名称（含括号内容，如中性粒细胞百分数）
+提取结构：{项目名}: {
+"结果": "数值",
+"参考范围": "x-x"
+}
+清除结果数字后的箭头符号（如4.48↑→4.48）
+输出要求：
+纯JSON格式（无Markdown标记）
+仅包含PDF中实际存在的内容
+数值严格按报告原文
+禁止列标题、翻译、推测或补充内容
+无报告时间时，直接以检查项目开头，不添加"报告时间"字段
+PDF处理注意事项：
+优先解析文本型PDF的原始文字层
+对扫描版PDF需执行OCR识别
+需校验表格结构定位准确性
+注意跨页表格的连续性识别
+正确格式示例：
+{
+"报告时间": "1970-01-01 00:00:00",
+"白细胞计数": {
+"结果": "4.48",
+"参考范围": "3.50-9.50"
+},
+"中性粒细胞百分数": {
+"结果": "62.3",
+"参考范围": "40.0-75.0"
+}
+}`;
+
+            defaultPromptBtn.addEventListener('click', () => {
+                promptInput.value = defaultPrompt;
+            });
+
+        // 处理文件拖放
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            dropZone.style.borderColor = '#007bff';
+        });
+
+        dropZone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            dropZone.style.borderColor = '#ddd';
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            dropZone.style.borderColor = '#ddd';
+            const file = e.dataTransfer.files[0];
+            handleFile(file);
+        });
+
+        // 处理点击上传
+        dropZone.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                handleFile(file);
+            }
+        });
+
+        // 处理文件
+        async function handleFile(file) {
+            if (!file || file.type !== 'application/pdf') {
+                alert('请选择有效的PDF文件！');
+                return;
+            }
+
+            try {
+                // 创建FormData对象
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('purpose', 'file-extract');
+
+                // 发送文件上传请求
+                const response = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/files', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${API_KEY}`
+                    },
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error(`上传失败: ${response.status}`);
+                }
+
+                const data = await response.json();
+                console.log('文件ID:', data.id);
+
+                // 显示上传成功消息
+                alert(`文件上传成功！文件ID: ${data.id}`);
+
+                // 更新文件信息面板
+                document.getElementById('fileName').textContent = file.name;
+                document.getElementById('fileId').textContent = data.id;
+
+                // 创建PDF预览
+                const pdfPreview = document.getElementById('pdfPreview');
+                pdfPreview.style.display = 'block';
+
+                // 使用FileReader读取文件
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    // 创建PDF嵌入对象
+                    const iframe = document.createElement('iframe');
+                    iframe.src = e.target.result;
+                    iframe.style.width = '100%';
+                    iframe.style.height = '100%';
+                    iframe.style.border = 'none';
+                    
+                    // 清空并添加新的预览
+                    const pdfContainer = document.getElementById('pdfContainer');
+                    pdfContainer.innerHTML = '';
+                    pdfContainer.appendChild(iframe);
+                };
+                
+                // 读取文件为Data URL
+                reader.readAsDataURL(file);
+                
+                analyzeBtn.disabled = false;
+
+            } catch (error) {
+                console.error('文件上传错误:', error);
+                alert('文件上传失败: ' + error.message);
+                return;
+            }
+        }
+
+        // 调用API分析PDF
+        async function analyzePDF() {
+            if (!API_KEY) {
+                alert('请先配置API密钥！');
+                return;
+            }
+
+            const fileId = document.getElementById('fileId').textContent;
+            if (!fileId) {
+                alert('请先上传PDF文件！');
+                return;
+            }
+
+            const prompt = promptInput.value.trim();
+            if (!prompt) {
+                alert('请输入提示词！');
+                return;
+            }
+
+            loading.style.display = 'block';
+            analyzeBtn.disabled = true;
+            resultSection.style.display = 'none';
+
+            try {
+                // 添加文件状态检查
+                const fileStatusResponse = await fetch(`https://dashscope.aliyuncs.com/compatible-mode/v1/files/${fileId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${API_KEY}`
+                    }
+                });
+
+                if (!fileStatusResponse.ok) {
+                    throw new Error(`文件状态检查失败: ${fileStatusResponse.status}`);
+                }
+
+                const fileStatus = await fileStatusResponse.json();
+                if (fileStatus.status !== 'processed') {
+                    throw new Error('文件尚未处理完成，请稍后重试');
+                }
+
+                const completion = await openai.chat.completions.create({
+                    model: 'qwen-long',
+                    messages: [
+                        {
+                            role: 'system',
+                            content: 'You are a helpful assistant.'
+                        },
+                        {
+                            role: 'system',
+                            content: `fileid://${fileId}`
+                        },
+                        {
+                            role: 'user',
+                            content: prompt
+                        }
+                    ]
+                });
+
+                const fullContent = completion.choices[0].message.content;
+                resultSection.style.display = 'block';
+
+                // 解析结果并显示表格
+                try {
+                    const result = JSON.parse(fullContent);
+                    let tableHtml = `
+                        <h3>检验报告分析结果</h3>
+                        <div class="report-time">报告时间：${result['报告时间'] || '未提供'}</div>
+                        <table class="result-table">
+                            <thead>
+                                <tr>
+                                    <th>检测项目</th>
+                                    <th>结果</th>
+                                    <th>参考范围</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    `;
+
+                    for (const [key, value] of Object.entries(result)) {
+                        if (key === '报告时间') continue;
+                        
+                        let isAbnormal = false;
+                        if (value.参考范围) {
+                            const [min, max] = value.参考范围.split('-').map(Number);
+                            const result = Number(value.结果);
+                            if (!isNaN(min) && !isNaN(max) && !isNaN(result)) {
+                                isAbnormal = result < min || result > max;
+                            }
+                        }
+
+                        tableHtml += `
+                            <tr>
+                                <td>${key}</td>
+                                <td class="${isAbnormal ? 'abnormal' : ''}">${value.结果}</td>
+                                <td>${value.参考范围 || '-'}</td>
+                            </tr>
+                        `;
+                    }
+
+                    tableHtml += '</tbody></table>';
+                    resultSection.innerHTML = tableHtml;
+                } catch (parseError) {
+                    console.error('JSON解析错误：', parseError);
+                    resultSection.innerHTML = `<div class="error-message">无法解析API返回的结果：${parseError.message}</div>`;
+                }
+            } catch (error) {
+                let errorMessage = '抱歉，发生了错误。';
+                if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
+                    errorMessage = '网络连接失败，请检查您的网络连接并重试。';
+                } else if (error.status === 401) {
+                    errorMessage = 'API密钥无效或已过期。';
+                } else if (error.status >= 500) {
+                    errorMessage = '服务器响应错误，请稍后重试。';
+                } else if (error.message.includes('parsing error')) {
+                    errorMessage = 'PDF文件解析失败，请确保上传的是有效的PDF文件。';
+                } else {
+                    errorMessage = `处理过程中出现错误：${error.message}`;
+                }
+                alert(errorMessage);
+                console.error('API调用错误：', error);
+                resultSection.innerHTML = `<div class="error-message">${errorMessage}</div>`;
+            } finally {
+                loading.style.display = 'none';
+                analyzeBtn.disabled = false;
+            }
+        }
+
+        analyzeBtn.addEventListener('click', analyzePDF);
+    </script>
+</body>
+</html>
