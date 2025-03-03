@@ -365,7 +365,6 @@
                                                                         itemName: itemName,
                                                                         result: itemData.结果,
                                                                         range: itemData.参考范围,
-                                                                        unit: itemData.单位,
                                                                         status: result < min ? '偏低' : '偏高'
                                                                     });
                                                                 }
@@ -390,8 +389,8 @@
                                                 content += '----------------------------------------\n';
                                             }
                                             content += `${item.itemName}:\n`;
-                                            content += `  结果: ${item.result} ${item.unit} (${item.status})\n`;
-                                            content += `  参考范围: ${item.range} ${item.unit}\n\n`;
+                                            content += `  结果: ${item.result} (${item.status})\n`;
+                                            content += `  参考范围: ${item.range}\n\n`;
                                         });
                                         
                                         if (abnormalResults.length === 0) {
@@ -489,7 +488,6 @@
                                                             date: new Date(report.report_time),
                                                             formattedDate: formatDateTime(report.report_time),
                                                             value: parseFloat(itemData.结果),
-                                                            unit: itemData.单位,
                                                             range: itemData.参考范围,
                                                             status: status
                                                         });
@@ -507,7 +505,7 @@
                                             });
                                             const values = results.map(item => item.value);
                                             const range = results[0]?.range.split('-').map(num => parseFloat(num)) || [];
-                                            const unit = results[0]?.unit || '';
+                                            // const unit = results[0]?.unit || '';
 
                                             // 显示图表容器
                                             chartContainer.style.display = 'block';
@@ -519,7 +517,7 @@
                                             const option = {
                                                 title: {
                                                     text: `${selectedItem}`,
-                                                    subtext: `参考范围: ${results[0]?.range} ${unit}`,
+                                                    subtext: `参考范围: ${results[0]?.range} `,
                                                     left: 'center',
                                                     padding: [0, 0, 20, 0]
                                                 },
@@ -535,7 +533,7 @@
                                                         const dataIndex = params[0].dataIndex;
                                                         const result = results[dataIndex];
                                                         return `日期：${result.formattedDate}<br/>
-                                                                数值：${result.value} ${unit}<br/>
+                                                                数值：${result.value} <br/>
                                                                 状态：${result.status}`;
                                                     }
                                                 },
@@ -550,7 +548,7 @@
                                                 },
                                                 yAxis: {
                                                     type: 'value',
-                                                    name: unit,
+                                                    name: '结果',
                                                     axisLine: { show: true },
                                                     splitLine: { show: true },
                                                     markArea: range.length === 2 ? {
