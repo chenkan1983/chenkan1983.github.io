@@ -550,7 +550,7 @@
                                             const option = {
                                                 title: {
                                                     text: `${selectedItem}`,
-                                                    subtext: `参考范围: ${results[0]?.range} `,
+                                                    // subtext: `参考范围: ${results[0]?.range} `,
                                                     left: 'center',
                                                     padding: [0, 0, 20, 0]
                                                 },
@@ -565,8 +565,9 @@
                                                     formatter: function (params) {
                                                         const dataIndex = params[0].dataIndex;
                                                         const result = results[dataIndex];
-                                                        return `日期：${result.formattedDate}<br/>
+                                                        return `日期：${result.formattedDate.split(' ')[0]}<br/>
                                                                 数值：${result.value} <br/>
+                                                                参考范围：${result.range} <br/>
                                                                 状态：${result.status}`;
                                                     }
                                                 },
@@ -656,13 +657,11 @@
                                                     : report.report_data;
 
                                                 if (!Array.isArray(parsedData)) {
-
                                                     return;
                                                 }
 
                                                 parsedData.forEach(item => {
                                                     if (typeof item !== 'object') {
-
                                                         return;
                                                     }
 
