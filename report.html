@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,6 +9,7 @@
     <script src="./js/echarts.min.js"></script>
     <script src="./js/xlsx.full.min.js"></script>
 </head>
+
 <body>
     <!-- 添加遮罩和加载动画 -->
     <div class="overlay">
@@ -40,7 +42,7 @@
 
         // 添加登录检查逻辑
         // 退出登录按钮点击事件
-        document.getElementById('logoutButton').addEventListener('click', function() {
+        document.getElementById('logoutButton').addEventListener('click', function () {
             localStorage.removeItem('email');
             localStorage.removeItem('password');
             localStorage.removeItem('reports');
@@ -48,10 +50,10 @@
             window.location.href = 'loginReport.html';
         });
 
-        window.onload = async function() {
+        window.onload = async function () {
             const email = localStorage.getItem('email');
             const password = localStorage.getItem('password');
-            
+
             if (!email || !password) {
                 // 如果没有登录信息，重定向到登录页面
                 window.location.href = 'loginReport.html';
@@ -83,13 +85,13 @@
         const overlay = document.querySelector('.overlay');
 
         // 文件选择事件
-        fileInput.addEventListener('change', function(e) {
+        fileInput.addEventListener('change', function (e) {
             const file = e.target.files[0];
             if (file) {
                 if (file.type.startsWith('image/')) {
                     // 处理图片文件
                     const reader = new FileReader();
-                    reader.onload = function(e) {
+                    reader.onload = function (e) {
                         localStorage.removeItem('selectedPdf')
                         localStorage.setItem('selectedImage', e.target.result);
                         window.location.href = 'inputReport.html';
@@ -98,7 +100,7 @@
                 } else if (file.type === 'application/pdf') {
                     // 处理PDF文件
                     const reader = new FileReader();
-                    reader.onload = function(e) {
+                    reader.onload = function (e) {
                         localStorage.removeItem('selectedImage')
                         localStorage.setItem('selectedPdf', e.target.result);
                         window.location.href = 'inputReport.html';
@@ -299,7 +301,7 @@
                                     // 添加事件监听器以显示选中的检查项目内容
                                     itemSelect.addEventListener('change', function () {
                                         const selectedItem = itemSelect.value;
-            
+
                                         if (selectedItem) {
                                             let results = [];
                                             data.forEach(report => {
@@ -335,28 +337,39 @@
                                     reportContent = document.createElement('div');
                                     reportContent.id = 'reportContent';
                                     reportContainer.appendChild(reportContent);
-                                    
+
                                     showLoading();
-                                    
+
                                     try {
                                         // 收集所有报告数据并分析异常值
                                         let abnormalResults = [];
-                                        
+
                                         data.forEach(report => {
                                             const reportDate = formatDateTime(report.report_time);
                                             const reportData = JSON.parse(report.report_data);
-                                            
+
                                             reportData.forEach(item => {
                                                 // 遍历每个检查项
                                                 for (const [itemName, itemData] of Object.entries(item)) {
                                                     if (itemData.结果 && itemData.参考范围) {
                                                         // 解析参考范围
-                                                        const range = itemData.参考范围.split('-');
-                                                        if (range.length === 2) {
-                                                            const min = parseFloat(range[0]);
-                                                            const max = parseFloat(range[1]);
+                                                        const rangeMatch = itemData.参考范围.match(/(\d*\.?\d*)-(\d*\.?\d*)|([<>])(\d*\.?\d+)/);
+                                                        let min, max;
+
+                                                        if (rangeMatch) {
+                                                            if (rangeMatch[1] && rangeMatch[2]) { // 处理 500-1000 格式
+                                                                min = parseFloat(rangeMatch[1]);
+                                                                max = parseFloat(rangeMatch[2]);
+                                                            } else if (rangeMatch[3] === '<') { // 处理 <500 格式
+                                                                min = -Infinity;
+                                                                max = parseFloat(rangeMatch[4]);
+                                                            } else if (rangeMatch[3] === '>') { // 处理 >500 格式
+                                                                min = parseFloat(rangeMatch[4]);
+                                                                max = Infinity;
+                                                            }
+
                                                             const result = parseFloat(itemData.结果);
-                                                            
+
                                                             // 检查是否为数值且在范围外
                                                             if (!isNaN(result) && !isNaN(min) && !isNaN(max)) {
                                                                 if (result < min || result > max) {
@@ -374,14 +387,14 @@
                                                 }
                                             });
                                         });
-                                        
+
                                         // 按报告时间排序
                                         abnormalResults.sort((a, b) => new Date(b.reportTime) - new Date(a.reportTime));
-                                        
+
                                         // 生成展示内容
                                         let content = '';
                                         let currentReportTime = '';
-                                        
+
                                         abnormalResults.forEach(item => {
                                             if (currentReportTime !== item.reportTime) {
                                                 currentReportTime = item.reportTime;
@@ -392,15 +405,15 @@
                                             content += `  结果: ${item.result} (${item.status})\n`;
                                             content += `  参考范围: ${item.range}\n\n`;
                                         });
-                                        
+
                                         if (abnormalResults.length === 0) {
                                             content = '未发现异常指标。';
                                         }
-                                        
+
                                         reportContent.innerHTML = `<pre>${content}</pre>`;
-                                        
+
                                     } catch (error) {
-        
+
                                         alert('处理异常指标时发生错误，请重试！');
                                     } finally {
                                         hideLoading();
@@ -410,7 +423,7 @@
                                     // 创建图表容器
                                     const chartContainer = document.getElementById('chartContainer');
                                     chartContainer.style.display = 'none';
-                                    
+
                                     // 创建异常指标选择下拉列表
                                     const abnormalItemSelect = document.createElement('select');
                                     abnormalItemSelect.id = 'abnormalItemSelect';
@@ -426,12 +439,22 @@
                                         reportData.forEach(item => {
                                             for (const [itemName, itemData] of Object.entries(item)) {
                                                 if (itemData.结果 && itemData.参考范围) {
-                                                    const range = itemData.参考范围.split('-');
-                                                    if (range.length === 2) {
-                                                        const min = parseFloat(range[0]);
-                                                        const max = parseFloat(range[1]);
+                                                    const rangeMatch = itemData.参考范围.match(/(\d*\.?\d*)-(\d*\.?\d*)|([<>])(\d*\.?\d+)/);
+                                                    let min, max;
+                                                    // console.log(itemData.参考范围, rangeMatch);
+                                                    if (rangeMatch) {
+                                                        if (rangeMatch[1] && rangeMatch[2]) { // 处理 0.311-1.25 格式
+                                                            min = parseFloat(rangeMatch[1]);
+                                                            max = parseFloat(rangeMatch[2]);
+                                                        } else if (rangeMatch[3] === '<') { // 处理 <500 格式
+                                                            min = -Infinity;
+                                                            max = parseFloat(rangeMatch[4]);
+                                                        } else if (rangeMatch[3] === '>') { // 处理 >500 格式
+                                                            min = parseFloat(rangeMatch[4]);
+                                                            max = Infinity;
+                                                        }
                                                         const result = parseFloat(itemData.结果);
-                                                        
+                                                        console.log(itemName,result, min, max);
                                                         if (!isNaN(result) && !isNaN(min) && !isNaN(max)) {
                                                             if (result < min || result > max) {
                                                                 abnormalItems.add(itemName);
@@ -454,9 +477,9 @@
                                     reportContainer.appendChild(abnormalItemSelect);
 
                                     // 修改异常指标选择事件监听器
-                                    abnormalItemSelect.addEventListener('change', function() {
+                                    abnormalItemSelect.addEventListener('change', function () {
                                         const selectedItem = abnormalItemSelect.value;
-                                        
+
                                         if (selectedItem) {
                                             let results = [];
                                             data.forEach(report => {
@@ -465,15 +488,25 @@
                                                     if (item[selectedItem]) {
                                                         const itemData = item[selectedItem];
                                                         let status = '正常';
-                                                        
+
                                                         // 判断是否为异常值
                                                         if (itemData.结果 && itemData.参考范围) {
-                                                            const range = itemData.参考范围.split('-');
-                                                            if (range.length === 2) {
-                                                                const min = parseFloat(range[0]);
-                                                                const max = parseFloat(range[1]);
+                                                            const rangeMatch = itemData.参考范围.match(/(\d*\.?\d+)-(\d*\.?\d+)|([<>])(\d*\.?\d+)/);
+                                                            let min, max;
+
+                                                            if (rangeMatch) {
+                                                                if (rangeMatch[1] && rangeMatch[2]) { // 处理 500-1000 格式
+                                                                    min = parseFloat(rangeMatch[1]);
+                                                                    max = parseFloat(rangeMatch[2]);
+                                                                } else if (rangeMatch[3] === '<') { // 处理 <500 格式
+                                                                    min = -Infinity;
+                                                                    max = parseFloat(rangeMatch[4]);
+                                                                } else if (rangeMatch[3] === '>') { // 处理 >500 格式
+                                                                    min = parseFloat(rangeMatch[4]);
+                                                                    max = Infinity;
+                                                                }
                                                                 const result = parseFloat(itemData.结果);
-                                                                
+
                                                                 if (!isNaN(result) && !isNaN(min) && !isNaN(max)) {
                                                                     if (result < min) {
                                                                         status = '偏低';
@@ -483,7 +516,7 @@
                                                                 }
                                                             }
                                                         }
-                                                        
+
                                                         results.push({
                                                             date: new Date(report.report_time),
                                                             formattedDate: formatDateTime(report.report_time),
@@ -529,7 +562,7 @@
                                                 },
                                                 tooltip: {
                                                     trigger: 'axis',
-                                                    formatter: function(params) {
+                                                    formatter: function (params) {
                                                         const dataIndex = params[0].dataIndex;
                                                         const result = results[dataIndex];
                                                         return `日期：${result.formattedDate}<br/>
@@ -571,8 +604,8 @@
                                                             value: item.value,
                                                             coord: [index, item.value],
                                                             itemStyle: {
-                                                                color: item.status === '正常' ? '#67C23A' : 
-                                                                       item.status === '偏高' ? '#F56C6C' : '#E6A23C'
+                                                                color: item.status === '正常' ? '#67C23A' :
+                                                                    item.status === '偏高' ? '#F56C6C' : '#E6A23C'
                                                             }
                                                         }))
                                                     },
@@ -588,7 +621,7 @@
                                             myChart.setOption(option);
 
                                             // 监听窗口大小变化，调整图表大小
-                                            window.addEventListener('resize', function() {
+                                            window.addEventListener('resize', function () {
                                                 myChart.resize();
                                             });
                                         } else {
@@ -599,8 +632,6 @@
                                 else if (selectedType === 'export_excel') {
                                     showLoading();
                                     try {
-
-                                        
                                         // 验证 xlsx-style 是否正确加载
                                         if (typeof XLSX === 'undefined' || typeof XLSX.utils === 'undefined') {
                                             throw new Error('XLSX 库未正确加载，请刷新页面重试');
@@ -619,11 +650,11 @@
                                             try {
                                                 const reportTime = formatDateTime(report.report_time);
                                                 reportDates.push(reportTime);
-                                                
-                                                const parsedData = typeof report.report_data === 'string' 
-                                                    ? JSON.parse(report.report_data) 
+
+                                                const parsedData = typeof report.report_data === 'string'
+                                                    ? JSON.parse(report.report_data)
                                                     : report.report_data;
-                                                
+
                                                 if (!Array.isArray(parsedData)) {
 
                                                     return;
@@ -637,7 +668,7 @@
 
                                                     for (const [itemName, itemData] of Object.entries(item)) {
                                                         if (itemName === '报告时间') continue;
-                                                        
+
                                                         allItems.add(itemName);
                                                         if (!reportData[itemName]) {
                                                             reportData[itemName] = {
@@ -645,7 +676,7 @@
                                                                 结果: {}
                                                             };
                                                         }
-                                                        
+
                                                         const resultValue = itemData.结果 !== undefined && itemData.结果 !== null ? parseFloat(itemData.结果) : 'N/A';
                                                         reportData[itemName].结果[reportTime] = resultValue;
                                                     }
@@ -661,7 +692,7 @@
 
                                         // 创建Excel工作表数据
                                         const wsData = [];
-                                        
+
                                         // 构建表头
                                         const header = ['检查项目', '参考范围', ...reportDates];
                                         wsData.push(header);
@@ -693,11 +724,11 @@
                                             reportDates.forEach((date, dateIndex) => {
                                                 const itemData = reportData[item];
                                                 const result = itemData.结果[date];
-                                                const cellAddress = XLSX.utils.encode_cell({ 
+                                                const cellAddress = XLSX.utils.encode_cell({
                                                     r: itemIndex + 1,
                                                     c: dateIndex + 2
                                                 });
-                                                
+
                                                 if (!ws[cellAddress]) {
                                                     ws[cellAddress] = { t: 's' };
                                                 }
@@ -707,19 +738,31 @@
                                                     ws[cellAddress].v = 'N/A';
                                                 } else {
                                                     try {
-                                                        const [minStr, maxStr] = (itemData.参考范围 || '-').split('-');
-                                                        const min = parseFloat(minStr);
-                                                        const max = parseFloat(maxStr);
+                                                        const rangeMatch = itemData.参考范围.match(/(\d*\.?\d*)-(\d*\.?\d*)|([<>])(\d*\.?\d+)/);
+                                                        let min, max;
                                                         
+                                                        if (rangeMatch) {
+                                                            if (rangeMatch[1] && rangeMatch[2]) { // 处理 500-1000 格式
+                                                                min = parseFloat(rangeMatch[1]);
+                                                                max = parseFloat(rangeMatch[2]);
+                                                            } else if (rangeMatch[3] === '<') { // 处理 <500 格式
+                                                                min = -Infinity;
+                                                                max = parseFloat(rangeMatch[4]);
+                                                            } else if (rangeMatch[3] === '>') { // 处理 >500 格式
+                                                                min = parseFloat(rangeMatch[4]);
+                                                                max = Infinity;
+                                                            }
+                                                        }
+
                                                         const numericResult = parseFloat(result);
                                                         ws[cellAddress].t = 's';
-                                                        if (!isNaN(numericResult)) {                                                         
+                                                        if (!isNaN(numericResult)) {
                                                             ws[cellAddress].v = numericResult;
-                                                            
+
                                                             if (!isNaN(min) && !isNaN(max)) {
                                                                 if (numericResult < min) {
                                                                     ws[cellAddress].v = `${numericResult} ↓`;
-                                                                } else if (numericResult > max) {                                                          
+                                                                } else if (numericResult > max) {
                                                                     ws[cellAddress].v = `${numericResult} ↑`;
                                                                 }
                                                             }
@@ -727,7 +770,6 @@
                                                             ws[cellAddress].v = String(result);
                                                         }
                                                     } catch (error) {
-        
                                                         ws[cellAddress].v = String(result);
                                                     }
                                                 }
@@ -768,4 +810,5 @@
         });
     </script>
 </body>
+
 </html>
