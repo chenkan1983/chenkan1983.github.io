@@ -85,7 +85,7 @@
             .image-container {
                 min-height: 200px;
             }
-            
+
             #imagePreview {
                 max-width: 95%;
                 max-height: 60vh;
@@ -223,8 +223,13 @@
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
         /* 添加加载文字 */
@@ -235,7 +240,8 @@
         }
 
         /* 统一点击区域样式 */
-        #imagePreview, #pdfPreview {
+        #imagePreview,
+        #pdfPreview {
             cursor: pointer;
             transition: all 0.2s ease;
             border: 2px dashed #ddd;
@@ -243,7 +249,8 @@
         }
 
         /* 统一图片和PDF容器样式 */
-        .image-container, #pdfPreview {
+        .image-container,
+        #pdfPreview {
             max-width: 90%;
             max-height: 70vh;
             margin: 20px auto;
@@ -255,7 +262,9 @@
 
         /* 移动端适配 */
         @media (max-width: 768px) {
-            .image-container, #pdfPreview {
+
+            .image-container,
+            #pdfPreview {
                 max-width: 95%;
                 max-height: 60vh;
             }
@@ -268,7 +277,6 @@
             align-items: center;
             padding: 20px;
         }
-
     </style>
 </head>
 
@@ -311,6 +319,7 @@
     </div>
 
     <script type="module">
+        var medicalData = {};
         import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
         import OpenAI from 'https://cdn.jsdelivr.net/npm/openai@4.28.0/+esm';
 
@@ -404,7 +413,7 @@
         function togglePreview(type) {
             const imageContainer = document.querySelector('.image-container');
             const pdfPreview = document.getElementById('pdfPreview');
-            
+
             if (type === 'pdf') {
                 imageContainer.style.display = 'none';
                 pdfPreview.style.display = 'block';
@@ -416,13 +425,13 @@
 
         // 统一文件选择处理函数
         function createFileInputHandler() {
-            return function(e) {
+            return function (e) {
                 const fileInput = document.createElement('input');
                 fileInput.type = 'file';
                 fileInput.accept = 'image/*, application/pdf'; // 同时接受图片和PDF
                 fileInput.style.display = 'none';
 
-                fileInput.addEventListener('change', async function(e) {
+                fileInput.addEventListener('change', async function (e) {
                     const file = e.target.files[0];
                     if (!file) return;
 
@@ -440,25 +449,25 @@
                         reader.onload = function (e) {
                             const img = new Image();
                             img.src = e.target.result;
-                            
+
                             img.onload = () => {
                                 // 根据设备类型设置显示尺寸
                                 const isMobile = window.matchMedia("(max-width: 767px)").matches;
                                 const maxDisplayWidth = isMobile ? window.innerWidth * 0.9 : 1200;
-                                
+
                                 // 保持原始比例缩放
                                 const scale = Math.min(
                                     maxDisplayWidth / img.width,
                                     (isMobile ? window.innerHeight * 0.6 : window.innerHeight * 0.8) / img.height
                                 );
-                                
+
                                 const imagePreview = document.getElementById('imagePreview');
                                 imagePreview.style.width = `${img.width * scale}px`;
                                 imagePreview.style.height = `${img.height * scale}px`;
                                 imagePreview.style.opacity = 1;
                                 hideLoading();
                             };
-                            
+
                             if (isImage) {
                                 localStorage.setItem('selectedImage', e.target.result);
                                 localStorage.removeItem('selectedPdf');
@@ -480,13 +489,23 @@
         }
 
         // 检查登录状态
-        window.onload = function () {
+        window.onload = async function () {
             const email = localStorage.getItem('email');
             if (!email) {
                 window.location.href = 'loginReport.html';
                 return;
             }
             showLoading(); // 显示加载动画
+            // 从 Supabase 查询用户的报告
+            const { data, error } = await supabase
+                .from('medical_reports')
+                .select('*')
+                .eq('user_email', email);
+
+            if (error) {
+                throw error;
+            }
+            medicalData = JSON.parse(JSON.stringify(data))
             // 加载选中的文件
             const selectedImage = localStorage.getItem('selectedImage');
             const selectedPdf = localStorage.getItem('selectedPdf');
@@ -497,10 +516,10 @@
                 imagePreview.style.display = 'block';
                 hideLoading();
             } else if (selectedPdf) {
-                
+
                 document.getElementById('imagePreview').style.display = 'none';
                 document.getElementById('pdfPreview').style.display = 'block';
-                
+
                 // 加载PDF.js
                 const script = document.createElement('script');
                 script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
@@ -523,7 +542,7 @@
             // 统一文件选择处理
             const imagePreview = document.getElementById('imagePreview');
             const pdfPreview = document.getElementById('pdfPreview');
-            
+
             imagePreview.addEventListener('click', createFileInputHandler());
             pdfPreview.addEventListener('click', createFileInputHandler());
 
@@ -589,11 +608,11 @@
 
                 // 第二步：上传成功后显示预览
                 pdfPreview.style.display = 'block';
-                
+
                 // 加载并渲染PDF
                 const loadingTask = pdfjsLib.getDocument(pdfData);
                 const pdf = await loadingTask.promise;
-                
+
                 // 清空容器
                 const pdfContainer = document.getElementById('pdfContainer');
                 pdfContainer.innerHTML = '';
@@ -601,15 +620,15 @@
                 // 渲染所有页面
                 for (let i = 1; i <= pdf.numPages; i++) {
                     const page = await pdf.getPage(i);
-                    
+
                     // 创建页面容器
                     const pageContainer = document.createElement('div');
                     pageContainer.className = 'pdf-page-container';
-                    
+
                     // 创建canvas
                     const canvas = document.createElement('canvas');
                     const context = canvas.getContext('2d');
-                    
+
                     // 调整缩放参数为当前150%
                     const baseScale = 1.0; // 从0.7改为1.05（0.7 * 1.5 ≈ 1.05）
                     const pageWidth = 650; // 从600改为900（600 * 1.5 = 900）
@@ -617,7 +636,7 @@
                     const viewport = page.getViewport({ scale: 1 });
                     const scale = (pageWidth / viewport.width) * baseScale;
                     const scaledViewport = page.getViewport({ scale: scale });
-                    
+
                     // 调整canvas尺寸
                     canvas.width = scaledViewport.width;
                     canvas.height = scaledViewport.height;
@@ -753,14 +772,14 @@
             try {
                 showLoading();
                 let result;
-                
+
                 if (selectedPdf) {
                     // PDF处理流程
                     const fileId = document.getElementById('fileId')?.textContent;
                     if (!fileId) {
                         throw new Error('未找到PDF文件ID');
                     }
-                    
+
                     result = await callAIModel(null, pdfPrompt, modelType);
                 } else {
                     // 图片处理流程
@@ -774,6 +793,139 @@
                 const cleanedResult = result.replace(/```json|```/g, '').trim();
                 const parsedData = JSON.parse(cleanedResult);
 
+                // 处理参考范围中的'~'符号
+                for (const key in parsedData) {
+                    if (key !== '报告时间' && parsedData[key].参考范围) {
+                        parsedData[key].参考范围 = parsedData[key].参考范围.replace(/~/g, '-');
+                    }
+                }
+
+                // 比较解析结果与medicalData中的数据
+                const abnormalItems = [];
+                const processedItems = new Set(); // 用于跟踪已处理的项目
+
+                if (medicalData && medicalData.length > 0) {
+                    // 遍历当前解析结果中的每个项目
+                    for (const [key, value] of Object.entries(parsedData)) {
+                        if (key === '报告时间' || processedItems.has(key)) continue;
+
+                        let isNormalItem = false;
+                        const currentResult = parseFloat(value.结果);
+
+                        // 1. 首先检查当前值是否在参考范围内
+                        if (!isNaN(currentResult) && value.参考范围) {
+                            const rangeMatch = value.参考范围.match(/([\d.]+)-([\d.]+)|([<>])([\d.]+)/);
+                            if (rangeMatch) {
+                                let min, max;
+                                if (rangeMatch[1] && rangeMatch[2]) { // 处理 500-1000 格式
+                                    min = parseFloat(rangeMatch[1]);
+                                    max = parseFloat(rangeMatch[2]);
+                                } else if (rangeMatch[3] === '<') { // 处理 <500 格式
+                                    min = -Infinity;
+                                    max = parseFloat(rangeMatch[4]);
+                                } else if (rangeMatch[3] === '>') { // 处理 >500 格式
+                                    min = parseFloat(rangeMatch[4]);
+                                    max = Infinity;
+                                }
+
+                                if (!isNaN(min) && !isNaN(max)) {
+                                    if (currentResult >= min && currentResult <= max) {
+                                        isNormalItem = true;
+                                        continue; // 如果在参考范围内，直接处理下一个项目
+                                    }
+                                }
+                            }
+                        }
+
+                        // 2. 如果不在参考范围内，检查与历史数据的差异
+                        let hasNormalMatch = false;
+                        let closestMedicalValue = null;
+                        let minDifference = Infinity;
+
+                        // 遍历所有历史数据
+                        for (const medical of medicalData) {
+                            const historicalData = JSON.parse(medical.report_data);
+                            const medicalItem = historicalData.find(item => Object.keys(item)[0] === key);
+
+                            if (medicalItem) {
+                                const medicalValue = medicalItem[key];
+                                const historicalResult = parseFloat(medicalValue.结果);
+
+                                // 检查结果数值差异
+                                if (!isNaN(currentResult) && !isNaN(historicalResult)) {
+                                    const difference = Math.abs(currentResult - historicalResult);
+                                    const avgValue = (currentResult + historicalResult) / 2;
+                                    const relativeDifference = difference / avgValue;
+
+                                    // 更新最接近的历史数据
+                                    if (relativeDifference < minDifference) {
+                                        minDifference = relativeDifference;
+                                        closestMedicalValue = medicalValue;
+                                    }
+
+                                    // 如果找到合理匹配（差异在50%以内且参考范围一致）
+                                    if (relativeDifference <= 0.5 && value.参考范围 === medicalValue.参考范围) {
+                                        hasNormalMatch = true;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+
+                        // 3. 如果没有找到合理匹配，添加到异常项
+                        if (!hasNormalMatch) {
+                            // 添加参考范围异常信息
+                            if (!isNormalItem) {
+                                const rangeMatch = value.参考范围.match(/([\d.]+)-([\d.]+)/);
+                                if (rangeMatch) {
+                                    const min = parseFloat(rangeMatch[1]);
+                                    abnormalItems.push({
+                                        项目: key,
+                                        当前结果: value.结果,
+                                        参考范围: value.参考范围,
+                                        差异类型: currentResult < min ? '低于参考范围' : '高于参考范围'
+                                    });
+                                }
+                            }
+
+                            if (closestMedicalValue) {
+                                // 检查参考范围差异
+                                if (value.参考范围 !== closestMedicalValue.参考范围) {
+                                    if (value.参考范围 && (!closestMedicalValue.参考范围 || closestMedicalValue.参考范围.trim() === '')) {
+                                        abnormalItems.push({
+                                            项目: key,
+                                            当前参考范围: value.参考范围,
+                                            历史参考范围: '无',
+                                            差异类型: '历史数据缺少参考范围'
+                                        });
+                                    } else {
+                                        abnormalItems.push({
+                                            项目: key,
+                                            当前参考范围: value.参考范围,
+                                            历史参考范围: closestMedicalValue.参考范围,
+                                            差异类型: '参考范围不一致'
+                                        });
+                                    }
+                                }
+
+                                // 检查结果数值差异（相差超过50%）
+                                if (minDifference > 0.5) {
+                                    abnormalItems.push({
+                                        项目: key,
+                                        当前结果: value.结果,
+                                        历史结果: closestMedicalValue.结果,
+                                        差异类型: '结果数值差异过大'
+                                    });
+                                }
+                            }
+                        }
+
+                        // 标记该项目已处理
+                        processedItems.add(key);
+                    }
+                }
+                    
+                
                 parsedReportContainer.textContent = JSON.stringify(parsedData, null, 2);
                 parsedReportContainer.style.display = 'block';
 
@@ -800,6 +952,19 @@
                 document.querySelector('.upload-report').style.display = 'block';
                 alert('报告解析成功！');
 
+                // 如果存在异常项目，显示弹窗
+                if (abnormalItems.length > 0) {
+                    let message = '发现以下异常项目：\n\n';
+                    abnormalItems.forEach(item => {
+                        message += `项目：${item.项目}\n`;
+                        if (item.差异类型 === '结果数值差异过大') {
+                            message += `当前结果：${item.当前结果}\n历史结果：${item.历史结果}\n差异类型：${item.差异类型}\n\n`;
+                        } else {
+                            message += `当前参考范围：${item.当前参考范围}\n历史参考范围：${item.历史参考范围}\n差异类型：${item.差异类型}\n\n`;
+                        }
+                    });
+                    alert(message);
+                }
             } catch (error) {
                 console.error('处理失败:', error);
                 alert(`处理失败: ${error.message}`);
