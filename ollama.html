@@ -300,26 +300,21 @@
                 const mimeType = file.type || 'image/jpeg';
                 
                 // 使用fetch直接调用Ollama API
-                const response = await fetch('http://localhost:11434/v1/chat/completions', {
+                const response = await fetch('http://localhost:11433/v1/chat/completions', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        model: 'ZimaBlueAI/Qwen2-VL-7B-Instruct:latest',
+                        model: 'gemma3:12b',
                         messages: [
                             {
+                                role: 'system',
+                                content: promptInput.value
+                            },
+                            {
                                 role: 'user',
-                                content: [
-                                    { type: 'text', text: prompt },
-                                    {
-                                        type: 'image_url',
-                                        image_url: {
-                                            url: `data:${mimeType};base64,${base64Image}`
-                                        }
-                                    }
-                                ]
+                                content: `分析这张图片：${base64Image}`
                             }
                         ],
                         stream: false

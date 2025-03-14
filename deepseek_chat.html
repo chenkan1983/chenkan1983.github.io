@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DeepSeek-R1对话</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         body {
             margin: 0;
@@ -28,27 +29,50 @@
             border: 1px solid #ddd;
             border-radius: 8px;
             margin-bottom: 20px;
+            position: relative;
         }
 
         .message {
             margin-bottom: 15px;
             padding: 10px;
             border-radius: 8px;
+            word-wrap: break-word;
+            max-width: 80%;
         }
 
         .user-message {
             background-color: #007bff;
             color: white;
-            margin-left: 20%;
+            margin-left: auto;
+            margin-right: 0;
+            max-width: 80%;
+            float: right;
+            clear: both;
         }
 
         .bot-message {
             background-color: #f0f0f0;
             margin-right: 20%;
+            float: left;
+            clear: both;
+        }
+
+        .bot-message pre {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+
+        .bot-message code {
+            background-color: #f8f9fa;
+            padding: 2px 4px;
+            border-radius: 4px;
         }
 
         .input-section {
             display: flex;
+            align-items: center;
             gap: 10px;
         }
 
@@ -85,8 +109,14 @@
 
         .loading {
             display: none;
-            text-align: center;
-            margin: 20px 0;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 8px;
+            z-index: 1000;
         }
 
         .spinner {
@@ -109,16 +139,16 @@
     <div class="container">
         <h1>DeepSeek-R1对话</h1>
         
-        <div class="chat-history" id="chatHistory"></div>
+        <div class="chat-history" id="chatHistory">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p>正在思考中...</p>
+            </div>
+        </div>
 
         <div class="input-section">
             <textarea id="userInput" placeholder="请输入您的问题..."></textarea>
             <button id="sendBtn">发送</button>
-        </div>
-
-        <div class="loading">
-            <div class="spinner"></div>
-            <p>正在思考中...</p>
         </div>
     </div>
 
@@ -134,7 +164,11 @@
         function addMessage(content, isUser) {
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
-            messageDiv.textContent = content;
+            if (isUser) {
+                messageDiv.textContent = content;
+            } else {
+                messageDiv.innerHTML = marked.parse(content);
+            }
             chatHistory.appendChild(messageDiv);
             chatHistory.scrollTop = chatHistory.scrollHeight;
         }
@@ -170,7 +204,8 @@
 
                 const data = await response.json();
                 const botResponse = data.choices[0].message.content;
-                addMessage(botResponse, false);
+                const processedResponse = botResponse.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+                addMessage(processedResponse, false);
             } catch (error) {
                 let errorMessage = '抱歉，发生了错误。';
                 if (error.name === 'TypeError' && error.message === 'Failed to fetch') {

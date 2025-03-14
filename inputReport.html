@@ -299,6 +299,7 @@
                 <option value="deepseek-ai/deepseek-vl2">deepseek-vl2</option>
                 <option value="Qwen/Qwen2-VL-72B-Instruct">Qwen2-VL-72B-Instruct</option>
                 <option value="qwen-long">Qwen-Long(pdf)</option>
+                <option value="qwen-plus">Qwen-Plus(pdf)</option>
             </select>
             <button class="action-btn parse-report">解析报告</button>
         </div>
@@ -380,6 +381,7 @@
                         "参考范围": "x-x"
                         }
                     - 清除结果数字后的箭头符号（如4.48↑→4.48）
+                    - 要特别注意数字后面跟随的向上或向下箭头，不要将箭头误认为数字1
 
                     3. 输出要求：
                     - 纯JSON格式（无Markdown标记）
@@ -671,7 +673,7 @@
         // 调用AI模型API
         async function callAIModel(base64Image, prompt, modelType) {
             try {
-                if (modelType === 'qwen-long') {
+                if (modelType === 'qwen-long' || modelType === 'qwen-plus') {
                     const fileId = document.getElementById('fileId').textContent;
                     if (!fileId) {
                         throw new Error('未找到文件ID');
