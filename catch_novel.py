@@ -8,7 +8,7 @@ from queue import Queue, Empty
 import os
 import tkinter as tk
 from tkinter import ttk, messagebox
-import argparse
+
 
 def extract_chapter_number(chapter_text):
     # 中文数字映射表
@@ -30,7 +30,19 @@ def extract_chapter_number(chapter_text):
     if chinese_match:
         cn_str = chinese_match.group(1)
         
-        # 处理中文数字
+        # 检查是否包含计数单位
+        has_units = any(unit in cn_str for unit in ['十', '百', '千', '万'])
+        
+        if not has_units:
+            # 不包含计数单位时，直接按位转换
+            result = 0
+            for char in cn_str:
+                if char in cn_num:
+                    result = result * 10 + cn_num[char]
+            print(f"提取到中文数字章节号: {chapter_text} -> {result}")
+            return result
+        
+        # 包含计数单位时的处理逻辑
         result = 0
         temp_num = 0
         unit = 1
@@ -144,16 +156,21 @@ def get_chapter_content(url):
         return None, None
 
 class ChapterWorker(threading.Thread):
-    def __init__(self, queue, novels_dir, lock):
+    def __init__(self, queue, novels_dir, lock, crawler_gui):
         threading.Thread.__init__(self)
         self.queue = queue
         self.novels_dir = novels_dir
         self.lock = lock
         self.completed_chapters = 0
+        self.crawler_gui = crawler_gui  # 添加对GUI的引用
     
     def run(self):
         while True:
             try:
+                # 检查是否需要停止
+                if not self.crawler_gui.is_crawling:
+                    break
+                
                 # 从队列获取任务
                 chapter_info = self.queue.get_nowait()
                 if chapter_info is None:
@@ -164,6 +181,10 @@ class ChapterWorker(threading.Thread):
                 
                 # 获取章节内容
                 chapter_title, chapter_content = get_chapter_content(chapter_url)
+                
+                # 再次检查是否停止
+                if not self.crawler_gui.is_crawling:
+                    break
                 
                 # 如果获取成功且是有效的章节标题，直接写入文件
                 if chapter_title and chapter_content and re.search(r'^第[零一二三四五六七八九十百千万\d]+章', chapter_title):
@@ -197,7 +218,7 @@ class NovelCrawlerGUI:
     def __init__(self, root):
         self.root = root
         self.root.title('小说章节爬取工具')
-        self.root.geometry('800x700')  # 增加窗口高度
+        self.root.geometry('800x800')  # 增加窗口高度
         
         # 设置整体样式
         style = ttk.Style()
@@ -280,7 +301,7 @@ class NovelCrawlerGUI:
         
         # 进度显示框架
         progress_frame = ttk.LabelFrame(main_frame, text="进度", padding=10)
-        progress_frame.pack(fill=tk.X, pady=10)
+        progress_frame.pack(fill=tk.X, pady=5)
         
         progress_content_frame = ttk.Frame(progress_frame)
         progress_content_frame.pack(fill=tk.X, padx=20, pady=5)
@@ -288,40 +309,55 @@ class NovelCrawlerGUI:
         progress_label = ttk.Label(progress_content_frame, textvariable=self.progress_var)
         progress_label.pack(fill=tk.X, pady=5)
         
-        # 开始按钮框架
+        # 开始按钮框架 - 减少上边距
         button_frame = ttk.Frame(main_frame)
-        button_frame.pack(fill=tk.X, pady=(10, 20))
+        button_frame.pack(fill=tk.X, pady=(0, 0))  # 将上边距从10改为0
         
         # 创建自定义按钮样式
         style = ttk.Style()
+        # 配置普通样式
         style.configure('BigButton.TButton',
                        font=('微软雅黑', 16, 'bold'),
-                       padding=(80, 40),  # 显著增加按钮内边距
-                       cursor='hand2')  # 添加手型光标
+                       padding=(40, 40))  # 移除这里的cursor设置
         
         # 开始按钮容器
         button_container = ttk.Frame(button_frame, padding=20)
         button_container.pack(expand=True)
         
+        # 添加爬取状态标志
+        self.is_crawling = False
+        
+        # 修改开始/停止按钮的处理函数
+        def toggle_crawling():
+            if not self.is_crawling:
+                self.start_crawling()
+                start_button.configure(text="停止爬取")
+                self.is_crawling = True
+            else:
+                self.stop_crawling()
+                start_button.configure(text="开始爬取")
+                self.is_crawling = False
+        
         start_button = ttk.Button(button_container,
                                 text="开始爬取",
-                                command=self.start_crawling,
-                                style='BigButton.TButton')
+                                command=toggle_crawling,
+                                style='BigButton.TButton',
+                                cursor='hand2')  # 在这里直接设置cursor
         start_button.pack(expand=True, ipadx=30, ipady=15)  # 增加内部填充
+        
+        # 添加回车键绑定
+        def on_return(event):
+            toggle_crawling()
+        
+        # 绑定回车键到根窗口
+        self.root.bind('<Return>', on_return)
         
         # 添加鼠标悬停效果
         def on_enter(e):
-            e.widget.configure(style='BigButton.TButton.hover')
+            e.widget.state(['active'])  # 使用ttk的内置状态管理
         
         def on_leave(e):
-            e.widget.configure(style='BigButton.TButton')
-        
-        # 配置悬停样式
-        style.configure('BigButton.TButton.hover',
-                       font=('微软雅黑', 16, 'bold'),
-                       padding=(80, 40),
-                       cursor='hand2',
-                       background='#e1e1e1')  # 悬停时的背景色
+            e.widget.state(['!active'])  # 移除active状态
         
         start_button.bind('<Enter>', on_enter)
         start_button.bind('<Leave>', on_leave)
@@ -415,6 +451,7 @@ class NovelCrawlerGUI:
             
             # 创建并启动爬取线程
             self.progress_var.set("正在爬取中...")
+            self.is_crawling = True
             threading.Thread(target=self.run_crawler, args=(base_url, start, end, threads, output), daemon=True).start()
             
             # 隐藏加载动画
@@ -424,8 +461,17 @@ class NovelCrawlerGUI:
             self.hide_loading()
             messagebox.showerror("错误", "请输入有效的数字")
     
+    def stop_crawling(self):
+        """停止爬取任务"""
+        self.progress_var.set("正在停止爬取...")
+        self.is_crawling = False
+        self.progress_var.set("爬取已停止")
+
     def run_crawler(self, base_url, start, end, threads, output):
         try:
+            # 初始化完成计数
+            total_completed = 0
+            
             # 创建novels目录
             if not os.path.exists(output):
                 os.makedirs(output)
@@ -447,8 +493,8 @@ class NovelCrawlerGUI:
             book_id = re.search(r'book_(\d+)', base_url)
             book_id = book_id.group(1) if book_id else ''
             
+            # 提取章节信息
             for dd in dd_tags:
-                # 在 dd 标签中查找链接
                 link = dd.find('a')
                 if link and f'/book_{book_id}/' in link.get('href', ''):
                     chapter_text = link.text.strip()
@@ -457,102 +503,68 @@ class NovelCrawlerGUI:
                         chapters.append(chapter_text)
                         chapter_urls.append(chapter_url)
             
-            # 按章节号排序
-            sorted_chapters = sorted(zip(chapters, chapter_urls), key=lambda x: extract_chapter_number(x[0]))
-            chapters, chapter_urls = zip(*sorted_chapters)
-            
-            # 生成要匹配的章节名称列表并打印
-            target_chapters = []
-            if end is not None:
-                print("\n准备爬取以下章节：")
-                for i in range(start, end + 1):
-                    chapter_name = f"第{i}章"
-                    target_chapters.append(chapter_name)
-                    print(f"- {chapter_name}")
-                print("\n开始匹配章节...\n")
-            
-            # 根据章节号筛选
-            filtered_chapters = []
-            filtered_urls = []
-            
-            # 创建章节名称到URL的映射
-            chapter_map = {}
-            for chapter, url in zip(chapters, chapter_urls):
-                # 提取章节号
-                chapter_num = extract_chapter_number(chapter)
-                if chapter_num > 0:  # 确保能提取到有效的章节号
-                    # 使用标准格式作为键
-                    standard_name = f"第{chapter_num}章"
-                    chapter_map[standard_name] = (chapter, url)
-            
-            # 按照目标章节列表顺序匹配
-            if end is not None:
-                for target_chapter in target_chapters:
-                    if target_chapter in chapter_map:
-                        chapter, url = chapter_map[target_chapter]
-                        filtered_chapters.append(chapter)
-                        filtered_urls.append(url)
-                        print(f"目标章节 {target_chapter} -> 匹配到实际章节: {chapter}")
-                    else:
-                        print(f"未找到目标章节: {target_chapter}")
-            else:
-                # 如果没有指定结束章节，则获取所有大于等于起始章节的章节
-                for chapter, url in sorted(zip(chapters, chapter_urls), 
-                                        key=lambda x: extract_chapter_number(x[0])):
-                    chapter_num = extract_chapter_number(chapter)
-                    if chapter_num >= start:
-                        filtered_chapters.append(chapter)
-                        filtered_urls.append(url)
-                        print(f"匹配到目标章节: {chapter}")
-            
-            # 验证是否获取到了所有需要的章节
-            if end is not None:
-                missing_chapters = set(target_chapters) - {f"第{extract_chapter_number(ch)}章" for ch in filtered_chapters}
-                if missing_chapters:
-                    missing_str = ", ".join(sorted(missing_chapters))
-                    self.progress_var.set(f"警告：缺少以下章节：{missing_str}")
-                    messagebox.showwarning("警告", f"未找到部分章节：{missing_str}")
-                    if not filtered_chapters:
-                        return
-            
             # 创建任务队列
             task_queue = Queue()
             
-            # 将任务添加到队列，并显示实际章节号
-            for i, (chapter, chapter_url) in enumerate(zip(filtered_chapters, filtered_urls)):
+            # 将任务添加到队列
+            for index, (chapter, chapter_url) in enumerate(zip(chapters, chapter_urls)):
+                if not self.is_crawling:  # 检查是否需要停止
+                    break
                 chapter_num = extract_chapter_number(chapter)
-                print(f"添加任务：第 {chapter_num} 章")
-                task_queue.put((i, chapter, chapter_url))
+                if chapter_num >= start and (end is None or chapter_num <= end):
+                    task_queue.put((index, chapter, chapter_url))
             
-            # 创建一个线程锁
-            thread_lock = threading.Lock()
+            if not self.is_crawling:  # 如果已经停止，直接返回
+                self.progress_var.set("爬取已停止")
+                return
             
             # 创建工作线程
             workers = []
-            total_completed = 0
-            for _ in range(threads):  # 修改这里，使用传入的threads参数
-                worker = ChapterWorker(task_queue, output, thread_lock)  # 修改这里，使用传入的output参数
+            for _ in range(threads):
+                worker = ChapterWorker(task_queue, output, threading.Lock(), self)
                 worker.start()
                 workers.append(worker)
             
             # 等待所有任务完成
             task_queue.join()
             
-            # 停止所有线程
-            for _ in range(threads):  # 修改这里，使用传入的threads参数而不是num_threads
+            # 停止所有工作线程
+            for _ in range(threads):
                 task_queue.put(None)
             
-            # 统计完成的章节数
+            # 等待所有线程结束并统计完成数量
             for worker in workers:
                 worker.join()
                 total_completed += worker.completed_chapters
             
-            self.progress_var.set(f"爬取完成！总共获取了 {total_completed} 个章节")
-            messagebox.showinfo("完成", f"所有章节内容已保存到 {output} 目录")
+            # 更新进度显示并重置按钮状态
+            if self.is_crawling:  # 只在正常完成时显示完成消息
+                self.progress_var.set(f"爬取完成，共获取 {total_completed} 章节")
+                # 使用after方法在主线程中更新按钮状态
+                self.root.after(0, self._reset_button_state)
             
         except Exception as e:
-            self.progress_var.set(f"发生错误: {str(e)}")
-            messagebox.showerror("错误", str(e))
+            self.progress_var.set(f"爬取出错: {str(e)}")
+            print(f"爬取过程中出错: {str(e)}")
+            # 发生错误时也需要重置按钮状态
+            self.root.after(0, self._reset_button_state)
+
+    def _reset_button_state(self):
+        """重置按钮状态的辅助方法"""
+        self.is_crawling = False
+        # 获取开始按钮并更新状态
+        for child in self.root.winfo_children():
+            if isinstance(child, tk.Canvas):
+                main_frame = child.winfo_children()[0]
+                for frame in main_frame.winfo_children():
+                    if isinstance(frame, ttk.Frame) and not frame.winfo_children():
+                        continue
+                    for widget in frame.winfo_children():
+                        if isinstance(widget, ttk.Frame):
+                            for btn in widget.winfo_children():
+                                if isinstance(btn, ttk.Button):
+                                    btn.configure(text="开始爬取", state='normal')
+                                    return
 
 def main():
     root = tk.Tk()
