@@ -11,9 +11,63 @@ from tkinter import ttk, messagebox
 import argparse
 
 def extract_chapter_number(chapter_text):
-    # 从章节名称中提取数字
-    match = re.search(r'(\d+)章', chapter_text)
-    return int(match.group(1)) if match else 0
+    # 中文数字映射表
+    cn_num = {
+        '零': 0, '一': 1, '二': 2, '三': 3, '四': 4,
+        '五': 5, '六': 6, '七': 7, '八': 8, '九': 9,
+        '十': 10, '百': 100, '千': 1000, '万': 10000
+    }
+    
+    # 从章节名称中提取数字（支持阿拉伯数字和中文数字）
+    # 严格匹配"第x章"格式，确保章节号前后没有其他数字或中文数字
+    arabic_match = re.search(r'^第(\d+)章(?![零一二三四五六七八九十百千万\d])[^零一二三四五六七八九十百千万\d]*', chapter_text)
+    if arabic_match:
+        num = int(arabic_match.group(1))
+        print(f"提取到阿拉伯数字章节号: {chapter_text} -> {num}")
+        return num
+    
+    chinese_match = re.search(r'^第([零一二三四五六七八九十百千万]+)章(?![零一二三四五六七八九十百千万\d])[^零一二三四五六七八九十百千万\d]*', chapter_text)
+    if chinese_match:
+        cn_str = chinese_match.group(1)
+        
+        # 处理中文数字
+        result = 0
+        temp_num = 0
+        unit = 1
+        
+        # 从左向右处理每个字符
+        for i, char in enumerate(cn_str):
+            if char in ['百', '千', '万']:
+                # 如果前面没有数字，默认为1
+                if temp_num == 0:
+                    temp_num = 1
+                if char == '万':
+                    result += temp_num * 10000
+                elif char == '千':
+                    result += temp_num * 1000
+                elif char == '百':
+                    result += temp_num * 100
+                temp_num = 0
+            elif char == '十':
+                # 处理"十"的特殊情况
+                if i == 0:  # 如果"十"在开头
+                    temp_num = 1
+                if temp_num == 0:
+                    temp_num = 1
+                result += temp_num * 10
+                temp_num = 0
+            else:
+                temp_num = cn_num[char]
+        
+        # 处理最后的数字
+        if temp_num > 0:
+            result += temp_num
+        
+        print(f"提取到中文数字章节号: {chapter_text} -> {result}")
+        return result
+    
+    print(f"无法提取章节号: {chapter_text}")
+    return 0  # 如果没有找到有效的章节号，返回0
 
 def get_chapter_content(url):
     # 设置请求头，模拟浏览器访问
@@ -35,6 +89,11 @@ def get_chapter_content(url):
             
             # 获取章节标题
             title = soup.find('h1').text.strip() if soup.find('h1') else '未知章节'
+            
+            # 验证章节标题格式
+            if not re.search(r'^第[零一二三四五六七八九十百千万\d]+章', title):
+                print(f"跳过非标准章节: {title}")
+                return None, None
             
             # 获取内容div
             content_div = soup.find('div', id='content')
@@ -106,8 +165,8 @@ class ChapterWorker(threading.Thread):
                 # 获取章节内容
                 chapter_title, chapter_content = get_chapter_content(chapter_url)
                 
-                # 如果获取成功，直接写入文件
-                if chapter_title and chapter_content:
+                # 如果获取成功且是有效的章节标题，直接写入文件
+                if chapter_title and chapter_content and re.search(r'^第[零一二三四五六七八九十百千万\d]+章', chapter_title):
                     with self.lock:
                         save_chapter_to_file(chapter, chapter_content, self.novels_dir)
                         self.completed_chapters += 1
@@ -138,53 +197,182 @@ class NovelCrawlerGUI:
     def __init__(self, root):
         self.root = root
         self.root.title('小说章节爬取工具')
-        self.root.geometry('600x400')
+        self.root.geometry('800x700')  # 增加窗口高度
         
-        # 创建主框架
-        main_frame = ttk.Frame(root, padding="10")
-        main_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
+        # 设置整体样式
+        style = ttk.Style()
+        style.configure('TFrame', padding=20)
+        style.configure('TLabel', font=('微软雅黑', 12))
+        style.configure('TEntry', font=('微软雅黑', 12))
+        style.configure('TButton', font=('微软雅黑', 12, 'bold'), padding=(20, 10))
+        style.configure('TLabelframe', padding=15)
+        style.configure('TLabelframe.Label', font=('微软雅黑', 12, 'bold'))
         
-        # URL输入
-        ttk.Label(main_frame, text="小说目录URL:").grid(row=0, column=0, sticky=tk.W, pady=5)
-        self.url_var = tk.StringVar(value='https://www.3wwd.com/book_94758315/')
-        ttk.Entry(main_frame, textvariable=self.url_var, width=50).grid(row=0, column=1, columnspan=2, sticky=tk.W, pady=5)
+        # 创建顶部间距框架
+        top_padding = ttk.Frame(root, height=4)
+        top_padding.pack(side=tk.TOP, fill=tk.X)
+        
+        # 创建主框架并居中，使用Canvas和Scrollbar
+        canvas = tk.Canvas(root)
+        scrollbar = ttk.Scrollbar(root, orient="vertical", command=canvas.yview)
+        main_frame = ttk.Frame(canvas, padding="4", style='TFrame')
+        
+        # 配置Canvas
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        # 布局滚动组件
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        
+        # 创建窗口来包含主框架
+        canvas_window = canvas.create_window((0, 0), window=main_frame, anchor="nw", width=canvas.winfo_width())
+        
+        # URL输入框架
+        url_frame = ttk.LabelFrame(main_frame, text="网址设置", padding=10)
+        url_frame.pack(fill=tk.X, pady=(0, 10))
+        
+        url_content_frame = ttk.Frame(url_frame)
+        url_content_frame.pack(fill=tk.X, padx=20, pady=5)
+        ttk.Label(url_content_frame, text="小说目录URL:").pack(side=tk.LEFT)
+        self.url_var = tk.StringVar(value='https://www.5dscw.com/book_94211100/')
+        ttk.Entry(url_content_frame, textvariable=self.url_var, width=60).pack(side=tk.LEFT, padx=10, fill=tk.X, expand=True)
+        
+        # 章节设置框架
+        chapter_frame = ttk.LabelFrame(main_frame, text="章节设置", padding=10)
+        chapter_frame.pack(fill=tk.X, pady=10)
         
         # 起始章节
-        ttk.Label(main_frame, text="起始章节:").grid(row=1, column=0, sticky=tk.W, pady=5)
+        start_frame = ttk.Frame(chapter_frame)
+        start_frame.pack(fill=tk.X, padx=20, pady=5)
+        ttk.Label(start_frame, text="起始章节:").pack(side=tk.LEFT)
         self.start_var = tk.StringVar(value='1')
-        ttk.Entry(main_frame, textvariable=self.start_var, width=10).grid(row=1, column=1, sticky=tk.W, pady=5)
+        ttk.Entry(start_frame, textvariable=self.start_var, width=10).pack(side=tk.LEFT, padx=10)
         
         # 结束章节
-        ttk.Label(main_frame, text="结束章节:").grid(row=2, column=0, sticky=tk.W, pady=5)
+        end_frame = ttk.Frame(chapter_frame)
+        end_frame.pack(fill=tk.X, padx=20, pady=5)
+        ttk.Label(end_frame, text="结束章节:").pack(side=tk.LEFT)
         self.end_var = tk.StringVar()
-        ttk.Entry(main_frame, textvariable=self.end_var, width=10).grid(row=2, column=1, sticky=tk.W, pady=5)
-        ttk.Label(main_frame, text="(留空表示爬取到最后)").grid(row=2, column=2, sticky=tk.W, pady=5)
+        ttk.Entry(end_frame, textvariable=self.end_var, width=10).pack(side=tk.LEFT, padx=10)
+        ttk.Label(end_frame, text="(留空表示爬取到最后)").pack(side=tk.LEFT)
         
-        # 线程数
-        ttk.Label(main_frame, text="线程数:").grid(row=3, column=0, sticky=tk.W, pady=5)
+        # 线程设置框架
+        thread_frame = ttk.LabelFrame(main_frame, text="性能设置", padding=10)
+        thread_frame.pack(fill=tk.X, pady=10)
+        
+        thread_content_frame = ttk.Frame(thread_frame)
+        thread_content_frame.pack(fill=tk.X, padx=20, pady=5)
+        ttk.Label(thread_content_frame, text="线程数:").pack(side=tk.LEFT)
         self.threads_var = tk.StringVar(value='10')
-        ttk.Entry(main_frame, textvariable=self.threads_var, width=10).grid(row=3, column=1, sticky=tk.W, pady=5)
+        ttk.Entry(thread_content_frame, textvariable=self.threads_var, width=10).pack(side=tk.LEFT, padx=10)
         
-        # 输出目录
-        ttk.Label(main_frame, text="输出目录:").grid(row=4, column=0, sticky=tk.W, pady=5)
+        # 输出设置框架
+        output_frame = ttk.LabelFrame(main_frame, text="输出设置", padding=10)
+        output_frame.pack(fill=tk.X, pady=10)
+        
+        output_content_frame = ttk.Frame(output_frame)
+        output_content_frame.pack(fill=tk.X, padx=20, pady=5)
+        ttk.Label(output_content_frame, text="输出目录:").pack(side=tk.LEFT)
         self.output_var = tk.StringVar(value='novels')
-        ttk.Entry(main_frame, textvariable=self.output_var, width=50).grid(row=4, column=1, columnspan=2, sticky=tk.W, pady=5)
+        ttk.Entry(output_content_frame, textvariable=self.output_var, width=50).pack(side=tk.LEFT, padx=10, fill=tk.X, expand=True)
         
-        # 进度显示
+        # 进度显示框架
+        progress_frame = ttk.LabelFrame(main_frame, text="进度", padding=10)
+        progress_frame.pack(fill=tk.X, pady=10)
+        
+        progress_content_frame = ttk.Frame(progress_frame)
+        progress_content_frame.pack(fill=tk.X, padx=20, pady=5)
         self.progress_var = tk.StringVar(value='准备就绪')
-        ttk.Label(main_frame, textvariable=self.progress_var).grid(row=5, column=0, columnspan=3, sticky=tk.W, pady=20)
+        progress_label = ttk.Label(progress_content_frame, textvariable=self.progress_var)
+        progress_label.pack(fill=tk.X, pady=5)
         
-        # 开始按钮 - 放大版本
-        start_button = ttk.Button(main_frame, text="开始爬取", command=self.start_crawling)
-        start_button.grid(row=6, column=0, columnspan=3, pady=20)
+        # 开始按钮框架
+        button_frame = ttk.Frame(main_frame)
+        button_frame.pack(fill=tk.X, pady=(10, 20))
         
-        # 设置按钮样式
+        # 创建自定义按钮样式
         style = ttk.Style()
-        style.configure('TButton', font=('TkDefaultFont', 12, 'bold'))  # 增大字体并加粗
-        start_button.configure(style='TButton', padding=(20, 10))  # 增加按钮内边距
+        style.configure('BigButton.TButton',
+                       font=('微软雅黑', 16, 'bold'),
+                       padding=(60, 30))  # 显著增加内边距
+        
+        # 开始按钮 - 使用Frame包装以增加点击区域
+        button_container = ttk.Frame(button_frame, padding=10)
+        button_container.pack(expand=True)
+        
+        start_button = ttk.Button(button_container,
+                                text="开始爬取",
+                                command=self.start_crawling,
+                                style='BigButton.TButton',
+                                cursor='hand2')  # 添加手型光标
+        start_button.pack(expand=True, ipadx=20, ipady=10)  # 增加内部填充
+        
+        # 配置主框架大小调整
+        def configure_scroll_region(event):
+            canvas.configure(scrollregion=canvas.bbox("all"))
+        
+        def configure_canvas_width(event):
+            canvas.itemconfig(canvas_window, width=event.width)
+        
+        # 绑定事件
+        main_frame.bind("<Configure>", configure_scroll_region)
+        canvas.bind("<Configure>", configure_canvas_width)
+        
+        # 配置鼠标滚轮滚动
+        def on_mousewheel(event):
+            canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+        
+        canvas.bind_all("<MouseWheel>", on_mousewheel)
+        
+        # 配置网格权重
+        self.root.grid_rowconfigure(0, weight=1)
+        self.root.grid_columnconfigure(0, weight=1)
+        
+        # 创建加载动画窗口
+        self.loading_window = None
+        self.loading_dots = 0
+        self.loading_animation = None
+    
+    def show_loading(self):
+        if self.loading_window is None:
+            self.loading_window = tk.Toplevel(self.root)
+            self.loading_window.title("准备中")
+            self.loading_window.geometry("200x100")
+            self.loading_window.transient(self.root)  # 设置为主窗口的子窗口
+            self.loading_window.grab_set()  # 模态窗口
+            
+            # 居中显示
+            x = self.root.winfo_x() + (self.root.winfo_width() - 200) // 2
+            y = self.root.winfo_y() + (self.root.winfo_height() - 100) // 2
+            self.loading_window.geometry(f"+{x}+{y}")
+            
+            # 添加加载文本标签
+            self.loading_label = ttk.Label(self.loading_window, text="准备中...")
+            self.loading_label.pack(expand=True)
+            
+            # 开始动画
+            self.update_loading_animation()
+    
+    def update_loading_animation(self):
+        if self.loading_window:
+            self.loading_dots = (self.loading_dots + 1) % 4
+            dots = "." * self.loading_dots
+            self.loading_label.config(text=f"准备中{dots}")
+            self.loading_animation = self.root.after(500, self.update_loading_animation)
+    
+    def hide_loading(self):
+        if self.loading_window:
+            if self.loading_animation:
+                self.root.after_cancel(self.loading_animation)
+                self.loading_animation = None
+            self.loading_window.destroy()
+            self.loading_window = None
     
     def start_crawling(self):
         try:
+            # 显示加载动画
+            self.show_loading()
+            
             # 获取输入值
             base_url = self.url_var.get().strip()
             start = int(self.start_var.get())
@@ -194,12 +382,15 @@ class NovelCrawlerGUI:
             
             # 参数验证
             if not base_url:
+                self.hide_loading()
                 messagebox.showerror("错误", "请输入小说目录URL")
                 return
             if start < 1:
+                self.hide_loading()
                 messagebox.showerror("错误", "起始章节必须大于0")
                 return
             if threads < 1:
+                self.hide_loading()
                 messagebox.showerror("错误", "线程数必须大于0")
                 return
             
@@ -207,7 +398,11 @@ class NovelCrawlerGUI:
             self.progress_var.set("正在爬取中...")
             threading.Thread(target=self.run_crawler, args=(base_url, start, end, threads, output), daemon=True).start()
             
+            # 隐藏加载动画
+            self.hide_loading()
+            
         except ValueError as e:
+            self.hide_loading()
             messagebox.showerror("错误", "请输入有效的数字")
     
     def run_crawler(self, base_url, start, end, threads, output):
@@ -247,17 +442,67 @@ class NovelCrawlerGUI:
             sorted_chapters = sorted(zip(chapters, chapter_urls), key=lambda x: extract_chapter_number(x[0]))
             chapters, chapter_urls = zip(*sorted_chapters)
             
-            # 根据起始和结束章节数筛选
-            start_index = max(0, start - 1)  # 修改这里，使用传入的start参数
-            end_index = end if end is not None else len(chapters)  # 修改这里，使用传入的end参数
-            chapters = chapters[start_index:end_index]
-            chapter_urls = chapter_urls[start_index:end_index]
+            # 生成要匹配的章节名称列表并打印
+            target_chapters = []
+            if end is not None:
+                print("\n准备爬取以下章节：")
+                for i in range(start, end + 1):
+                    chapter_name = f"第{i}章"
+                    target_chapters.append(chapter_name)
+                    print(f"- {chapter_name}")
+                print("\n开始匹配章节...\n")
+            
+            # 根据章节号筛选
+            filtered_chapters = []
+            filtered_urls = []
+            
+            # 创建章节名称到URL的映射
+            chapter_map = {}
+            for chapter, url in zip(chapters, chapter_urls):
+                # 提取章节号
+                chapter_num = extract_chapter_number(chapter)
+                if chapter_num > 0:  # 确保能提取到有效的章节号
+                    # 使用标准格式作为键
+                    standard_name = f"第{chapter_num}章"
+                    chapter_map[standard_name] = (chapter, url)
+            
+            # 按照目标章节列表顺序匹配
+            if end is not None:
+                for target_chapter in target_chapters:
+                    if target_chapter in chapter_map:
+                        chapter, url = chapter_map[target_chapter]
+                        filtered_chapters.append(chapter)
+                        filtered_urls.append(url)
+                        print(f"目标章节 {target_chapter} -> 匹配到实际章节: {chapter}")
+                    else:
+                        print(f"未找到目标章节: {target_chapter}")
+            else:
+                # 如果没有指定结束章节，则获取所有大于等于起始章节的章节
+                for chapter, url in sorted(zip(chapters, chapter_urls), 
+                                        key=lambda x: extract_chapter_number(x[0])):
+                    chapter_num = extract_chapter_number(chapter)
+                    if chapter_num >= start:
+                        filtered_chapters.append(chapter)
+                        filtered_urls.append(url)
+                        print(f"匹配到目标章节: {chapter}")
+            
+            # 验证是否获取到了所有需要的章节
+            if end is not None:
+                missing_chapters = set(target_chapters) - {f"第{extract_chapter_number(ch)}章" for ch in filtered_chapters}
+                if missing_chapters:
+                    missing_str = ", ".join(sorted(missing_chapters))
+                    self.progress_var.set(f"警告：缺少以下章节：{missing_str}")
+                    messagebox.showwarning("警告", f"未找到部分章节：{missing_str}")
+                    if not filtered_chapters:
+                        return
             
             # 创建任务队列
             task_queue = Queue()
             
-            # 将任务添加到队列
-            for i, (chapter, chapter_url) in enumerate(zip(chapters, chapter_urls)):
+            # 将任务添加到队列，并显示实际章节号
+            for i, (chapter, chapter_url) in enumerate(zip(filtered_chapters, filtered_urls)):
+                chapter_num = extract_chapter_number(chapter)
+                print(f"添加任务：第 {chapter_num} 章")
                 task_queue.put((i, chapter, chapter_url))
             
             # 创建一个线程锁
