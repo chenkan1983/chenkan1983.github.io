@@ -203,9 +203,11 @@ class NovelCrawlerGUI:
         style = ttk.Style()
         style.configure('TFrame', padding=20)
         style.configure('TLabel', font=('微软雅黑', 12))
-        style.configure('TEntry', font=('微软雅黑', 12))
-        style.configure('TButton', font=('微软雅黑', 12, 'bold'), padding=(20, 10))
-        style.configure('TLabelframe', padding=15)
+        style.configure('TEntry', font=('微软雅黑', 12), padding=5)  # 增加输入框内边距
+        style.configure('TButton', 
+                       font=('微软雅黑', 12, 'bold'), 
+                       padding=(20, 10))
+        style.configure('TLabelframe', padding=20)  # 增加标签框架内边距
         style.configure('TLabelframe.Label', font=('微软雅黑', 12, 'bold'))
         
         # 创建顶部间距框架
@@ -228,22 +230,22 @@ class NovelCrawlerGUI:
         canvas_window = canvas.create_window((0, 0), window=main_frame, anchor="nw", width=canvas.winfo_width())
         
         # URL输入框架
-        url_frame = ttk.LabelFrame(main_frame, text="网址设置", padding=10)
-        url_frame.pack(fill=tk.X, pady=(0, 10))
+        url_frame = ttk.LabelFrame(main_frame, text="网址设置", padding=15)  # 增加内边距
+        url_frame.pack(fill=tk.X, pady=(0, 15))  # 增加外边距
         
         url_content_frame = ttk.Frame(url_frame)
-        url_content_frame.pack(fill=tk.X, padx=20, pady=5)
+        url_content_frame.pack(fill=tk.X, padx=25, pady=10)  # 增加内边距
         ttk.Label(url_content_frame, text="小说目录URL:").pack(side=tk.LEFT)
         self.url_var = tk.StringVar(value='https://www.5dscw.com/book_94211100/')
         ttk.Entry(url_content_frame, textvariable=self.url_var, width=60).pack(side=tk.LEFT, padx=10, fill=tk.X, expand=True)
         
         # 章节设置框架
-        chapter_frame = ttk.LabelFrame(main_frame, text="章节设置", padding=10)
-        chapter_frame.pack(fill=tk.X, pady=10)
+        chapter_frame = ttk.LabelFrame(main_frame, text="章节设置", padding=15)
+        chapter_frame.pack(fill=tk.X, pady=15)
         
         # 起始章节
         start_frame = ttk.Frame(chapter_frame)
-        start_frame.pack(fill=tk.X, padx=20, pady=5)
+        start_frame.pack(fill=tk.X, padx=25, pady=10)
         ttk.Label(start_frame, text="起始章节:").pack(side=tk.LEFT)
         self.start_var = tk.StringVar(value='1')
         ttk.Entry(start_frame, textvariable=self.start_var, width=10).pack(side=tk.LEFT, padx=10)
@@ -294,18 +296,35 @@ class NovelCrawlerGUI:
         style = ttk.Style()
         style.configure('BigButton.TButton',
                        font=('微软雅黑', 16, 'bold'),
-                       padding=(60, 30))  # 显著增加内边距
+                       padding=(80, 40),  # 显著增加按钮内边距
+                       cursor='hand2')  # 添加手型光标
         
-        # 开始按钮 - 使用Frame包装以增加点击区域
-        button_container = ttk.Frame(button_frame, padding=10)
+        # 开始按钮容器
+        button_container = ttk.Frame(button_frame, padding=20)
         button_container.pack(expand=True)
         
         start_button = ttk.Button(button_container,
                                 text="开始爬取",
                                 command=self.start_crawling,
-                                style='BigButton.TButton',
-                                cursor='hand2')  # 添加手型光标
-        start_button.pack(expand=True, ipadx=20, ipady=10)  # 增加内部填充
+                                style='BigButton.TButton')
+        start_button.pack(expand=True, ipadx=30, ipady=15)  # 增加内部填充
+        
+        # 添加鼠标悬停效果
+        def on_enter(e):
+            e.widget.configure(style='BigButton.TButton.hover')
+        
+        def on_leave(e):
+            e.widget.configure(style='BigButton.TButton')
+        
+        # 配置悬停样式
+        style.configure('BigButton.TButton.hover',
+                       font=('微软雅黑', 16, 'bold'),
+                       padding=(80, 40),
+                       cursor='hand2',
+                       background='#e1e1e1')  # 悬停时的背景色
+        
+        start_button.bind('<Enter>', on_enter)
+        start_button.bind('<Leave>', on_leave)
         
         # 配置主框架大小调整
         def configure_scroll_region(event):
