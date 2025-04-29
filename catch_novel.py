@@ -6,6 +6,7 @@ import time
 import threading
 from queue import Queue, Empty
 import os
+import argparse
 
 def extract_chapter_number(chapter_text):
     # 从章节名称中提取数字
@@ -132,9 +133,20 @@ def save_chapter_to_file(chapter_name, content, novels_dir):
         f.write('\n'.join(formatted_paragraphs))
 
 def main():
-    base_url = 'https://www.3wwd.com/book_94758315/'
-    novels_dir = 'novels'
-    num_threads = 10  # 设置线程数
+    # 创建命令行参数解析器
+    parser = argparse.ArgumentParser(description='小说章节爬取工具')
+    parser.add_argument('base_url', help='小说目录页面的URL')
+    parser.add_argument('--start', type=int, default=1, help='起始章节数（默认为1）')
+    parser.add_argument('--end', type=int, default=None, help='结束章节数（默认为None，表示爬取到最后）')
+    parser.add_argument('--threads', type=int, default=10, help='线程数（默认为10）')
+    parser.add_argument('--output', default='novels', help='输出目录（默认为novels）')
+    
+    # 解析命令行参数
+    args = parser.parse_args()
+    
+    base_url = args.base_url
+    novels_dir = args.output
+    num_threads = args.threads
     
     try:
         # 创建novels目录
@@ -154,10 +166,14 @@ def main():
         chapters = []
         chapter_urls = []
         
+        # 从URL中提取book_id
+        book_id = re.search(r'book_(\d+)', base_url)
+        book_id = book_id.group(1) if book_id else ''
+        
         for dd in dd_tags:
             # 在 dd 标签中查找链接
             link = dd.find('a')
-            if link and '/book_94758315/' in link.get('href', ''):
+            if link and f'/book_{book_id}/' in link.get('href', ''):
                 chapter_text = link.text.strip()
                 chapter_url = urljoin(base_url, link.get('href', ''))
                 if chapter_text:
@@ -168,9 +184,11 @@ def main():
         sorted_chapters = sorted(zip(chapters, chapter_urls), key=lambda x: extract_chapter_number(x[0]))
         chapters, chapter_urls = zip(*sorted_chapters)
         
-        # 删除这两行，不再限制章节数
-        # chapters = chapters[:max_chapters]
-        # chapter_urls = chapter_urls[:max_chapters]
+        # 根据起始和结束章节数筛选
+        start_index = max(0, args.start - 1)
+        end_index = args.end if args.end is not None else len(chapters)
+        chapters = chapters[start_index:end_index]
+        chapter_urls = chapter_urls[start_index:end_index]
         
         # 创建任务队列
         task_queue = Queue()
