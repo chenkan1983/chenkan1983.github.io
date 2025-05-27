@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>Ollama本地对话</title>
+    <style>
+        #messages { border:1px solid #ccc; height:300px; overflow-y:auto; padding:10px }
+        #inputMessage { width:100%; margin:10px 0; padding:8px }
+        #sendButton { background:#4CAF50; color:white; border:none; padding:10px 20px }
+    </style>
+</head>
+<body>
+    <h1>Ollama本地对话</h1>
+    <div id="messages"></div>
+    <textarea id="inputMessage" placeholder="输入消息..." rows="3"></textarea>
+    <button id="sendButton">发送</button>
+
+    <script>
+        const API_URL = 'http://localhost:11433/api/chat';
+        const messagesDiv = document.getElementById('messages');
+        
+        document.getElementById('sendButton').addEventListener('click', async () => {
+            const userInput = document.getElementById('inputMessage').value.trim();
+            if (!userInput) return;
+
+            // 显示用户消息
+            addMessage('你：' + userInput);
+            
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model: 'gemma3:12b',  // 需替换为本地已安装的模型
+                        messages: [{ role: 'user', content: userInput }],
+                        stream: false
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const reply = data.message?.content || '无回复内容';
+                    addMessage('Ollama：' + reply);
+                } else {
+                    addMessage('错误：API请求失败');
+                }
+            } catch (error) {
+                addMessage('错误：' + error.message);
+            }
+            document.getElementById('inputMessage').value = '';
+        });
+
+        function addMessage(text) {
+            const msgDiv = document.createElement('div');
+            msgDiv.textContent = text;
+            messagesDiv.appendChild(msgDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+    </script>
+</body>
+</html>

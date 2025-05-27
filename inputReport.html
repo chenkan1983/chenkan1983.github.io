@@ -300,6 +300,7 @@
                 <option value="Qwen/VL-Max-2025-04-08">qwen-vl-max-2025-04-08</option>
                 <option value="Qwen/Qwen2-VL-72B-Instruct">Qwen2-VL-72B-Instruct</option>
                 <option value="qwen-long">Qwen-Long(pdf)</option>
+                <option value="qwen-plus">Qwen-Plus(pdf)</option>
             </select>
             <button class="action-btn parse-report">解析报告</button>
         </div>
@@ -381,8 +382,13 @@
                         "结果": "数值",
                         "参考范围": "x-x"
                         }
+<<<<<<< HEAD
                     - 清除结果数字后的上、下箭头符号（如4.48↑ -> 4.48）
                     - 注意区分箭头符号和数字1
+=======
+                    - 清除结果数字后的箭头符号（如4.48↑→4.48）
+                    - 要特别注意数字后面跟随的向上或向下箭头，不要将箭头误认为数字1
+>>>>>>> 1b85f05a53464533c1b45dbbdb36caac49f3416d
 
                     3. 输出要求：
                     - 纯JSON格式（无Markdown标记）
@@ -674,7 +680,7 @@
         // 调用AI模型API
         async function callAIModel(base64Image, prompt, modelType) {
             try {
-                if (modelType === 'qwen-long') {
+                if (modelType === 'qwen-long' || modelType === 'qwen-plus') {
                     const fileId = document.getElementById('fileId').textContent;
                     if (!fileId) {
                         throw new Error('未找到文件ID');
