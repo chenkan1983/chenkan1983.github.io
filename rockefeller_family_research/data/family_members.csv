@@ -1,0 +1,11 @@
+id,name,birth_year,death_year,generation,role,parent_id
+1,John D. Rockefeller Sr.,1839,1937,1,创始人,0
+2,Laura Spelman Rockefeller,1839,1915,1,创始人配偶,0
+3,John D. Rockefeller Jr.,1874,1960,2,继承人,1
+4,Abby Aldrich Rockefeller,1874,1948,2,继承人配偶,0
+5,John D. Rockefeller III,1906,1978,3,继承人,3
+6,Nelson Rockefeller,1908,1979,3,政治家/副总统,3
+7,Laurance Rockefeller,1910,2004,3,企业家/环保主义者,3
+8,Winthrop Rockefeller,1912,1973,3,阿肯色州州长,3
+9,David Rockefeller,1915,2017,3,银行家,3
+10,Abby Rockefeller,1903,1976,3,慈善家,3 
